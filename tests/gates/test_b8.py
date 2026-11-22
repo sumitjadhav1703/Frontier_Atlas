@@ -292,7 +292,7 @@ def test_fake_and_replay_provider_names_fail_live_qualification():
     """
     fake = json.loads((B8_FIX / "fake_llm_lineage.json").read_text(encoding="utf-8"))
     replay = json.loads((B8_FIX / "replay_llm_lineage.json").read_text(encoding="utf-8"))
-    from signal_ingest.llm.adapters.base import is_live_provider
+    from signal_ingest.llm.providers_config import is_live_provider
 
     for sample in (fake, replay):
         provider = b8_api.provider_name_from_lineage(sample)

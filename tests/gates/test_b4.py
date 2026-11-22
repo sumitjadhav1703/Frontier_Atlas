@@ -1012,40 +1012,30 @@ def test_r2_value_supported_by_quote_matrix(field, value, quote, ok):
 
 
 @pytest.mark.asyncio
-async def test_r2_ledger_outage_does_not_strand_half_open_probe():
-    """A quota-store error during a half-open probe releases the probe and abstains."""
-    import random as _random
+async def test_r2_ledger_outage_does_not_strand_reservations(monkeypatch):
+    """A quota-store error on one tier: that tier is not dispatched, the next answers,
+    and nothing is left reserved (R2b LiteLLMChain)."""
+    import litellm
 
-    from signal_ingest.config.clock import ControllableClock
-    from signal_ingest.llm.circuit import CircuitBreakerRegistry
-    from signal_ingest.llm.fallback import FallbackOrchestrator
-    from signal_ingest.llm.quota import QuotaLedger
+    from signal_ingest.config.network import install_network_guard, uninstall_network_guard
+    from tests.integration import b5_api
 
-    class BrokenLedger(QuotaLedger):
-        async def reserve(self, *a, **k):
-            raise ConnectionError("quota db down")
+    class BrokenLedger(b5_api.RecordingLedger):
+        async def reserve(self, provider, **kw):
+            if provider == "gemini":
+                raise ConnectionError("quota db down")
+            return await super().reserve(provider, **kw)
 
-    from signal_ingest.llm import FakeProvider, default_fake_limits
-    from tests.conftest import FROZEN_NOW
-
-    clock = ControllableClock(FROZEN_NOW)
-    orch = FallbackOrchestrator(
-        providers=[FakeProvider(default_fake_limits())],
-        quota=BrokenLedger(clock=clock),
-        circuits=CircuitBreakerRegistry(clock=clock),
-        clock=clock,
-        rng=_random.Random(0),
-    )
-    breaker = orch.circuits.get("fake")
-    breaker.force_open(open_for_s=5)
-    clock.advance(6)
-    from signal_ingest.llm.provider import ProviderRequest, RequestBudget
-
-    req = ProviderRequest(
-        messages=[{"role": "user", "content": "x"}],
-        budget=RequestBudget(max_input_tokens=100, max_output_tokens=10, max_request_bytes=5000),
-        provider="fake", model="m",
-    )
-    out = await orch.complete(req)
-    assert out.status == "abstain" and out.reason == "quota_error"
-    assert breaker.allow() is True
+    script = b5_api.LiteLLMScript().on("gemini", b5_api.OK_TEXT).on("groq", b5_api.OK_TEXT)
+    monkeypatch.setattr(litellm, "acompletion", script)
+    ledger = b5_api.quota(ledger_cls=BrokenLedger)
+    chain = b5_api.chain([b5_api.tier("gemini"), b5_api.tier("groq")], ledger)
+    install_network_guard()
+    try:
+        result = await chain.complete(b5_api.request())
+    finally:
+        uninstall_network_guard()
+    assert result.raw["provider"] == "groq"
+    assert script.dispatched("gemini") == 0
+    assert ledger.ops("commit") == ["groq"]
+    assert ledger.snapshot()["open_reservations"] == 0

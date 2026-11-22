@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 import os
+
+# Before anything can import litellm: its DEV mode runs load_dotenv() and would
+# pull a local .env (real keys) into the test process.
+os.environ["LITELLM_MODE"] = "PRODUCTION"
+os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
+
 from datetime import datetime, timezone
 from pathlib import Path
 

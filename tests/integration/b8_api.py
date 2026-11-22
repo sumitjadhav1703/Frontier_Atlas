@@ -24,7 +24,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from signal_ingest.llm.adapters.base import is_live_provider
+from signal_ingest.llm.providers_config import is_live_provider
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VAR_LIVE = REPO_ROOT / "var" / "live"

@@ -24,6 +24,7 @@ providers:
 
   gemini:
     provider: gemini
+    litellm_model: gemini/gemini-2.5-flash
     model: PLACEHOLDER_SELECT_AT_B8
     enabled: false
     context_tokens: 1048576
@@ -39,6 +40,7 @@ providers:
 
   groq:
     provider: groq
+    litellm_model: groq/llama-3.3-70b-versatile
     model: PLACEHOLDER_SELECT_AT_B8
     enabled: false
     context_tokens: 32768
@@ -54,6 +56,7 @@ providers:
 
   ollama:
     provider: ollama
+    litellm_model: ollama_chat/llama3.2:3b
     model: PLACEHOLDER_LOCAL
     enabled: false
     context_tokens: 8192

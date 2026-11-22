@@ -5,8 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from signal_ingest.llm.provider import ProviderLimits
 from signal_ingest.llm.quota import ProviderQuotaConfig, QuotaLedger
+
+# Fake / replay never qualifies as a live provider for B5/B8 gates.
+_LIVE_NAMES = frozenset({"gemini", "groq", "ollama"})
+_FAKE_PREFIXES = ("fake", "replay", "mock", "scripted")
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PROVIDERS_PATH = _REPO_ROOT / "config" / "providers.yaml"
@@ -14,8 +20,10 @@ DEFAULT_PROVIDERS_PATH = _REPO_ROOT / "config" / "providers.yaml"
 
 def load_providers_config(path: Path | None = None) -> dict[str, Any]:
     target = path or DEFAULT_PROVIDERS_PATH
-    text = target.read_text(encoding="utf-8")
-    return _parse_nested_yaml(text, source=target.name)
+    loaded = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{target.name}: expected a mapping at top level")
+    return loaded
 
 
 def provider_limits_from_config(
@@ -74,105 +82,23 @@ def quota_ledger_from_config(path: Path | None = None) -> QuotaLedger:
     return ledger
 
 
-def _parse_nested_yaml(text: str, *, source: str) -> dict[str, Any]:
-    """Indentation-based map parser for stub YAML (no lists of maps required)."""
-    root: dict[str, Any] = {}
-    stack: list[tuple[int, dict[str, Any]]] = [(-1, root)]
-    for lineno, raw in enumerate(text.splitlines(), start=1):
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        indent = len(raw) - len(raw.lstrip(" "))
-        if "\t" in raw.split(":")[0]:
-            raise ValueError(f"{source}:{lineno}: tabs not allowed")
-        line = raw.strip()
-        if ":" not in line:
-            raise ValueError(f"{source}:{lineno}: expected key: value")
-        key, _, value = line.partition(":")
-        key = key.strip()
-        value = _strip_inline_comment(value.strip())
-        while stack and indent <= stack[-1][0]:
-            stack.pop()
-        if not stack:
-            raise ValueError(f"{source}:{lineno}: invalid indentation")
-        parent = stack[-1][1]
-        if value == "":
-            child: dict[str, Any] = {}
-            parent[key] = child
-            stack.append((indent, child))
-        else:
-            parent[key] = _coerce(value)
-    return root
-
-
-def _strip_inline_comment(value: str) -> str:
-    """`enabled: false # note` → `false` (a quoted value keeps its `#`)."""
-    if value[:1] in {'"', "'"}:
-        return value
-    hash_at = value.find(" #")
-    return value[:hash_at].rstrip() if hash_at >= 0 else value
-
-
 def _get_int(block: dict[str, Any], key: str, default: int) -> int:
     value = block.get(key)
     return default if value is None else int(value)
 
 
-def _coerce(value: str) -> Any:
-    if value.startswith('"') and value.endswith('"') and len(value) >= 2:
-        return value[1:-1]
-    if value.startswith("'") and value.endswith("'") and len(value) >= 2:
-        return value[1:-1]
-    lower = value.lower()
-    if lower == "null":
-        return None
-    if lower == "true":
-        return True
-    if lower == "false":
+def is_live_provider(provider: str) -> bool:
+    """Return True only for real free-tier/local tier names — never fake."""
+    name = (provider or "").strip().lower()
+    if not name or name.startswith(_FAKE_PREFIXES):
         return False
-    try:
-        return int(value)
-    except ValueError:
-        pass
-    try:
-        return float(value)
-    except ValueError:
-        pass
-    return value
+    return name in _LIVE_NAMES
 
 
-def build_chain(
-    *,
-    path: Path | None = None,
-    connect: Any = None,
-    transport: Any = None,
-    order: tuple[str, ...] = ("gemini", "groq", "ollama"),
-) -> Any:
-    """Live extraction chain from providers.yaml, for extract(candidate, chain).
+def __getattr__(name: str) -> Any:
+    # Lazy re-export: importing config must not import litellm.
+    if name == "build_chain":
+        from signal_ingest.llm.router import build_chain
 
-    Enabled tiers in `order`; keys come from each block's api_key_env. With
-    `connect` (zero-arg psycopg connection factory) the daily quota is shared
-    across worker processes through PostgreSQL.
-    """
-    from signal_ingest.llm.adapters.base import provider_from_config
-    from signal_ingest.llm.fallback import ChainProvider, FallbackOrchestrator
-    from signal_ingest.llm.http_transport import HttpxTransport
-    from signal_ingest.llm.quota import PgQuotaLedger
-
-    blocks = load_providers_config(path).get("providers") or {}
-    ledger = quota_ledger_from_config(path)
-    if connect is not None:
-        ledger = PgQuotaLedger(
-            paid_spend_cap=ledger.paid_spend_cap, providers=ledger.providers, connect=connect
-        )
-    providers = [
-        provider_from_config(
-            name,
-            # Local CPU inference is slow; hosted tiers answer well within 30s.
-            transport=transport or HttpxTransport(timeout_s=120.0 if name == "ollama" else 30.0),
-            config=blocks[name],
-            limits=provider_limits_from_config(name, path=path),
-        )
-        for name in order
-        if isinstance(blocks.get(name), dict) and blocks[name].get("enabled")
-    ]
-    return ChainProvider(FallbackOrchestrator(providers=providers, quota=ledger))
+        return build_chain
+    raise AttributeError(name)

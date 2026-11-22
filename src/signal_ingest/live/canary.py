@@ -15,8 +15,7 @@ from signal_ingest.config.settings import Settings
 from signal_ingest.live.manifests import write_json, write_qualification_manifest
 from signal_ingest.live.paths import B8_BLOCKER_PATH, ensure_live_dirs
 from signal_ingest.live.settings import provider_keys_present
-from signal_ingest.llm.adapters.base import is_live_provider
-from signal_ingest.llm.providers_config import load_providers_config
+from signal_ingest.llm.providers_config import is_live_provider, load_providers_config
 
 OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"
 CANARY_ATTEMPT_CEILING = 10
