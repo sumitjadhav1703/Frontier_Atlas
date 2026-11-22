@@ -7,7 +7,7 @@ name = "signal-ingest"
 version = "0.1.0"
 description = "AI Signal ingestion pipeline (assessment)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"
 dependencies = [
   "pydantic>=2.7,<3",
   "pydantic-settings>=2.2,<3",
@@ -20,12 +20,27 @@ dependencies = [
   "dateparser==1.5.0",
   "trafilatura==2.3.1",
   "tldextract==5.4.0",
+  # R2b: LLM engine. litellm pinned to the 1.108 LTS line (uploaded 2026-11-07,
+  # after the 1.107.0 PyPI compromise); installed only from the hash-locked file.
+  "litellm==1.108.3",
+  "langgraph==1.2.20",
+  "langchain-core==1.7.6",
+  "pyyaml>=6.0.3,<7",
+  # B9: Google Sheets transport.
+  "gspread==6.2.1",
+  "google-auth>=2.40,<3",
+  # R4: local embeddings for candidate suggestions + pgvector adapter.
+  "fastembed==0.9.1",
+  "pgvector==0.5.1",
+  # R5: architecture.pdf renderer.
+  "reportlab>=4.4,<5",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2,<9",
   "pytest-asyncio>=0.23,<1",
+  "respx>=0.22,<1",
 ]
 
 [project.scripts]
