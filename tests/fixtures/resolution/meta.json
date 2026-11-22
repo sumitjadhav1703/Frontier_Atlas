@@ -1,0 +1,12 @@
+{
+  "label": "synthetic",
+  "not_for_live_export": true,
+  "block": "B6",
+  "files": [
+    "seeds.json",
+    "holdout_negatives.json",
+    "positives.json",
+    "cases.json"
+  ],
+  "seed_schema": "SeedRegisterDocument"
+}

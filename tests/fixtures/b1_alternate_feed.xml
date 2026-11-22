@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic alternate feed for B1 lineage gate. label=synthetic not_for_live_export -->
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>B1 Alternate Feed Fixture</title>
+  <id>urn:signal-ingest:fixture:b1-alternate</id>
+  <updated>2026-11-21T12:00:00Z</updated>
+  <link rel="alternate" href="https://example.invalid/primary"/>
+  <entry>
+    <title>Synthetic Alternate Item</title>
+    <id>urn:signal-ingest:fixture:b1-item-1</id>
+    <updated>2026-11-21T11:00:00Z</updated>
+    <link href="http://127.0.0.1/fixture-item"/>
+    <summary>Preserves source lineage under alternate-feed route.</summary>
+  </entry>
+</feed>

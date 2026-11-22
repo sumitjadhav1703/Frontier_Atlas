@@ -1,0 +1,150 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true
+  },
+  "cases": [
+    {
+      "id": "openai_aliases_same",
+      "inputs": [
+        {
+          "raw_name": "OpenAI",
+          "namespace": "startup"
+        },
+        {
+          "raw_name": "OpenAI, Inc.",
+          "namespace": "startup"
+        },
+        {
+          "raw_name": "Open AI",
+          "namespace": "startup"
+        }
+      ],
+      "expect": {
+        "decision": "match",
+        "canonical_id": "fixture.startup.openai",
+        "same_canonical": true
+      }
+    },
+    {
+      "id": "punct_case",
+      "inputs": [
+        {
+          "raw_name": "openai,  inc.",
+          "namespace": "startup"
+        },
+        {
+          "raw_name": "  OpenAI  ",
+          "namespace": "startup"
+        }
+      ],
+      "expect": {
+        "decision": "match",
+        "canonical_id": "fixture.startup.openai"
+      }
+    },
+    {
+      "id": "non_latin",
+      "inputs": [
+        {
+          "raw_name": "楽天AI",
+          "namespace": "startup"
+        }
+      ],
+      "expect": {
+        "decision": "match",
+        "canonical_id": "fixture.startup.rakuten-ai"
+      }
+    },
+    {
+      "id": "shared_hosts_abstain_without_ownership",
+      "inputs": [
+        {
+          "raw_name": "Mystery Tenant",
+          "namespace": "startup",
+          "domain": "shared-host.example"
+        }
+      ],
+      "expect": {
+        "decision": "abstain"
+      }
+    },
+    {
+      "id": "ai_vs_ai_period_collision",
+      "inputs": [
+        {
+          "raw_name": "AI",
+          "namespace": "startup"
+        },
+        {
+          "raw_name": "A.I.",
+          "namespace": "startup"
+        }
+      ],
+      "expect": {
+        "decision": "abstain"
+      }
+    },
+    {
+      "id": "subsidiary_not_parent",
+      "inputs": [
+        {
+          "raw_name": "DeepMind",
+          "namespace": "startup"
+        }
+      ],
+      "expect": {
+        "decision": "match",
+        "canonical_id": "fixture.startup.google-deepmind",
+        "not_id": "fixture.startup.google"
+      }
+    },
+    {
+      "id": "same_product_different_owners",
+      "inputs": [
+        {
+          "raw_name": "Studio",
+          "namespace": "product",
+          "owner_id": "fixture.startup.openai"
+        },
+        {
+          "raw_name": "Studio",
+          "namespace": "product",
+          "owner_id": "fixture.startup.huggingface"
+        }
+      ],
+      "expect": {
+        "distinct_canonical_ids": true
+      }
+    },
+    {
+      "id": "ambiguous_alias_abstain",
+      "inputs": [
+        {
+          "raw_name": "AI",
+          "namespace": "startup"
+        }
+      ],
+      "expect": {
+        "decision": "abstain"
+      }
+    },
+    {
+      "id": "unknown_org_new",
+      "inputs": [
+        {
+          "raw_name": "BrandNewUnseenCoXYZ-9182",
+          "namespace": "startup",
+          "domain": "brandnewunseencoxyz9182.example",
+          "evidence_url": "https://brandnewunseencoxyz9182.example/",
+          "source_id": "dir:brandnew-9182",
+          "allow_create": true,
+          "ownership_evidenced": true
+        }
+      ],
+      "expect": {
+        "decision": "new"
+      }
+    }
+  ]
+}

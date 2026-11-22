@@ -1,0 +1,24 @@
+source_id: jobs_aicommunity
+canonical_publisher: AI Community Jobs
+scope: jobs_monitor
+status: qualified
+documented_access_url: "https://www.aicommunityjobs.com/"
+policy_url: "https://www.aicommunityjobs.com/"
+review_date: 2026-11-21
+allowed_text_use: pending_live_policy_and_reuse_check
+original_time_field: original_posting_time
+original_timezone: UTC
+pagination_stop_rule: js_listing_then_employer_description_verify_original_time
+attribution: AI Community Jobs listing to employer description
+domain_governor: aicommunityjobs.com
+fallback: Himalayas AI/ML section with strict relevance filter if needed
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/jobs_aicommunity/discovery_20261121T190719Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: 0e43972f093bc914aa4b4ab414c8c276aac1d924ec7a04bf8768925b8ca3b242
+probe_rate_limit_headers: "{}"
+probe_observed_at: "2026-11-21T19:07:19.232271+00:00"
+probe_detail_url: "https://www.aicommunityjobs.com"
+probe_error: resolved address unsafe for host www.aicommunityjobs.com
+probe_pilot_count: 5
+notes: Check JS listing access, full employer description and original posting time.

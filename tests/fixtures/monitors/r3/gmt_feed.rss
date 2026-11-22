@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- synthetic fixture, not for live export -->
+<rss version="2.0"><channel>
+  <title>Synthetic GMT feed</title>
+  <item><title>R3 GMT item</title><link>https://example.test/r3/gmt-1</link><guid>r3-gmt-1</guid>
+    <pubDate>Sat, 21 Nov 2026 10:00:00 GMT</pubDate></item>
+</channel></rss>

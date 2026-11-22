@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B2 YC startups: aliases, repeated pages, missing headcount",
+    "review_date": "2026-11-21",
+    "not_for_live_export": true,
+    "modeled_on": "yc-oss AI-tag JSON shape"
+  },
+  "page_a": [
+    {
+      "_synthetic": true,
+      "id": "yc-aurora",
+      "slug": "aurora-labs",
+      "name": "Aurora Labs",
+      "url": "https://www.ycombinator.com/companies/aurora-labs",
+      "tags": ["Artificial Intelligence"],
+      "one_liner": "Synthetic AI fixture company",
+      "team_size": 42,
+      "batch": "W24"
+    },
+    {
+      "_synthetic": true,
+      "id": "yc-range",
+      "slug": "range-ai",
+      "name": "Range AI",
+      "url": "https://www.ycombinator.com/companies/range-ai",
+      "tags": ["Machine Learning"],
+      "description": "Synthetic ML tooling",
+      "team_size": "11-50",
+      "batch": "S23"
+    }
+  ],
+  "page_b_repeat_and_alias": [
+    {
+      "_synthetic": true,
+      "id": "yc-aurora",
+      "slug": "aurora-labs",
+      "name": "Aurora Labs",
+      "url": "https://www.ycombinator.com/companies/aurora-labs?utm_source=repeat",
+      "tags": ["AI"],
+      "one_liner": "Synthetic AI fixture company",
+      "team_size": 42,
+      "batch": "W24"
+    },
+    {
+      "_synthetic": true,
+      "uuid": "yc-aurora",
+      "slug": "aurora-labs-alias",
+      "name": "Aurora Labs",
+      "profile_url": "https://www.ycombinator.com/companies/aurora-labs",
+      "industries": ["Generative AI"],
+      "team_size": null,
+      "batch": "W24"
+    },
+    {
+      "_synthetic": true,
+      "id": "yc-non-ai",
+      "slug": "widgets-co",
+      "name": "Widgets Co",
+      "url": "https://www.ycombinator.com/companies/widgets-co",
+      "tags": ["Hardware"],
+      "team_size": 10
+    }
+  ]
+}

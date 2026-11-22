@@ -1,0 +1,102 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true
+  },
+  "positives": [
+    {
+      "raw_name": "OpenAI",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.openai",
+      "expected_name": "OpenAI"
+    },
+    {
+      "raw_name": "OpenAI, Inc.",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.openai",
+      "expected_name": "OpenAI"
+    },
+    {
+      "raw_name": "Open AI",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.openai",
+      "expected_name": "OpenAI"
+    },
+    {
+      "raw_name": "openai",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.openai",
+      "expected_name": "OpenAI"
+    },
+    {
+      "raw_name": "OPENAI INC",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.openai",
+      "expected_name": "OpenAI"
+    },
+    {
+      "raw_name": "Anthropic PBC",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.anthropic",
+      "expected_name": "Anthropic"
+    },
+    {
+      "raw_name": "HuggingFace",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.huggingface",
+      "expected_name": "Hugging Face"
+    },
+    {
+      "raw_name": "楽天AI",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.rakuten-ai",
+      "expected_name": "楽天AI"
+    },
+    {
+      "raw_name": "Rakuten AI",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.rakuten-ai",
+      "expected_name": "楽天AI"
+    },
+    {
+      "raw_name": "ChatGPT",
+      "namespace": "product",
+      "owner_id": "fixture.startup.openai",
+      "expected_id": "fixture.product.chatgpt",
+      "expected_name": "ChatGPT"
+    },
+    {
+      "raw_name": "Chat GPT",
+      "namespace": "product",
+      "owner_id": "fixture.startup.openai",
+      "expected_id": "fixture.product.chatgpt",
+      "expected_name": "ChatGPT"
+    },
+    {
+      "raw_name": "Studio",
+      "namespace": "product",
+      "owner_id": "fixture.startup.openai",
+      "expected_id": "fixture.product.studio-openai",
+      "expected_name": "Studio"
+    },
+    {
+      "raw_name": "Studio",
+      "namespace": "product",
+      "owner_id": "fixture.startup.huggingface",
+      "expected_id": "fixture.product.studio-huggingface",
+      "expected_name": "Studio"
+    },
+    {
+      "raw_name": "DeepMind",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.google-deepmind",
+      "expected_name": "Google DeepMind"
+    },
+    {
+      "raw_name": "Mistral AI SAS",
+      "namespace": "startup",
+      "expected_id": "fixture.startup.mistral",
+      "expected_name": "Mistral AI"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+source_id: bulk_yc_startups
+canonical_publisher: Y Combinator / yc-oss
+scope: bulk_startups
+status: qualified
+documented_access_url: "https://github.com/yc-oss/api/blob/main/README.md"
+policy_url: "https://www.ycombinator.com/companies/industry/artificial-intelligence"
+review_date: 2026-11-21
+allowed_text_use: metadata_and_attributed_fields_pending_live_policy_check
+original_time_field: null
+original_timezone: null
+pagination_stop_rule: stream_json_partitions_then_stop_at_empty_batch
+attribution: yc-oss unofficial AI-tag JSON; keep original YC profile URL and source ID
+domain_governor: ycombinator.com
+fallback: official YC AI directory organization pages and a second documented directory
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_yc_startups/bulk_discovery_20261121T190737Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: ddb49dda1df2223880ce4e5582248c3ffe01782db551171838eb35cfec06a06d
+probe_sample_date: "2026-11-21T19:07:37.239050+00:00"
+probe_rate_limit_headers: "{'connection': 'keep-alive', 'content-length': '3327846', 'server': 'GitHub.com', 'content-type': 'application/json; charset=utf-8', 'last-modified': 'Sat, 21 Nov 2026 04:52:25 GMT', 'access-control-allow-origin': '*', 'strict-transport-security': 'max-age=31556952', 'etag': 'W/\"6b012389-32c766\"', 'expires': 'Sat, 21 Nov 2026 19:15:08 GMT', 'cache-control': 'max-age=600', 'x-proxy-cache': 'MISS', 'x-github-request-id': '08AE:2DBDA0:1A7AE2:1DBA38:6B01EB64', 'x-github-edge-region': 'centralindia', 'accept-ranges': 'bytes', 'age': '103', 'date': 'Sat, 21 Nov 2026 19:07:36 GMT', 'via': '1.1 varnish', 'x-served-by': 'cache-bom-vanm7210058-BOM', 'x-cache': 'HIT', 'x-cache-hits': '0', 'x-timer': 'S1795288057.827346,VS0,VE1', 'vary': 'Accept-Encoding', 'x-fastly-request-id': '38953c6257f1218e75fd607642e98d67cd8910d1'}"
+probe_observed_at: "2026-11-21T19:07:37.239058+00:00"
+probe_error: HTTP 404
+probe_pilot_count: 30
+notes: Broaden to adjacent ML/generative-AI tags only with strict relevance and ID deduplication.

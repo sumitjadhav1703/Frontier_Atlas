@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B7",
+    "purpose": "Schema expectations for artifacts/gates/b7_benchmark.json (saved, not re-run heavy)"
+  },
+  "path": "artifacts/gates/b7_benchmark.json",
+  "required_top_keys": [
+    "machine",
+    "db_settings",
+    "runs",
+    "label",
+    "schema_version"
+  ],
+  "required_run_sizes": [1000, 10000],
+  "required_worker_counts": [1, 4],
+  "required_per_run_metrics": [
+    "wall_time_s",
+    "committed_rows_per_s",
+    "p95_processing_ms",
+    "peak_rss_mb",
+    "queue_depth_peak",
+    "duplicate_commits",
+    "retries",
+    "recovery_time_s",
+    "bottleneck",
+    "not_live_throughput"
+  ],
+  "label_must_contain": "synthetic",
+  "must_not_claim_live_scrape": true
+}

@@ -1,0 +1,17 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "jobs_aiworkportal"},
+  "_synthetic": true,
+  "id": "awp-1",
+  "requisition_id": "awp-req-1",
+  "title": "ML Ops Lead",
+  "company": "Portal AI",
+  "datePosted": "2026-11-21T06:30:00+00:00",
+  "is_remote": true,
+  "role_family": "engineering",
+  "url": "https://aijobportal.com/jobs/mlops-lead",
+  "employer_url": "https://portalai.example/careers/mlops",
+  "paragraphs": [
+    "FIRST_JOB_AWP Curated link joins employer posting.",
+    "LAST_JOB_AWP Syndicated URL dedupe key is employer URL."
+  ]
+}

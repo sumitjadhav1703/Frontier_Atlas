@@ -1,0 +1,4 @@
+# Synthetic robots for B1 gate — not for live export.
+User-agent: *
+Disallow: /secret/
+Allow: /

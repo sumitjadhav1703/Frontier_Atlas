@@ -1,0 +1,15 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "news_techcrunch"},
+  "_synthetic": true,
+  "id": "tc-synth-1",
+  "title": "TechCrunch synthetic AI fixture",
+  "url": "https://techcrunch.com/2026/11/21/synth-ai/",
+  "article_url": "https://techcrunch.com/2026/11/21/synth-ai/",
+  "labeled_publication_time": "2026-11-21T03:00:00-08:00",
+  "datePublished": "2026-11-21T03:00:00-08:00",
+  "dateModified": "2026-11-21T10:00:00-08:00",
+  "paragraphs": [
+    "FIRST_PARA_TC Labeled publication beats modified.",
+    "LAST_PARA_TC Full body retained."
+  ]
+}

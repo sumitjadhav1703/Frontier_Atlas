@@ -1,0 +1,20 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true},
+  "fields": {
+    "productName": {
+      "value": "Pixel Forge",
+      "quote": "Pixel Forge",
+      "segment_ids": ["TITLE"]
+    },
+    "price": {
+      "value": "120",
+      "quote": "The company has 120 employees across three offices.",
+      "segment_ids": ["BODY"]
+    },
+    "pricingModel": {
+      "value": "PAID",
+      "quote": "Pricing model: PAID. Monthly subscription is $45.",
+      "segment_ids": ["PRICING"]
+    }
+  }
+}

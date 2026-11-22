@@ -1,0 +1,13 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "news_guardian"},
+  "_synthetic": true,
+  "id": "guardian-synth-1",
+  "title": "Guardian synthetic AI fixture",
+  "url": "https://www.theguardian.com/technology/2026/nov/21/synth-ai",
+  "article_url": "https://www.theguardian.com/technology/2026/nov/21/synth-ai",
+  "datePublished": "2026-11-21T11:00:00+00:00",
+  "paragraphs": [
+    "FIRST_PARA_GUARDIAN Original timestamp fixture.",
+    "LAST_PARA_GUARDIAN Liveblog exclusions stay out of body."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B5",
+    "note": "Scripted HTTP bodies for offline fallback matrix; never promote to live."
+  }
+}

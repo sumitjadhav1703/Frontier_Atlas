@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B9",
+    "purpose": "B8 model-assisted JOB ages out of release window; a different grounded PRODUCT row supplies release proof"
+  },
+  "cutoff_utc": "2026-11-23T12:00:00+00:00",
+  "b8_job": {
+    "durable_identity": "job:employer-demo/req-aged",
+    "record_type": "JOB",
+    "publication_interval": ["2026-11-21T10:00:00+00:00", "2026-11-21T11:00:00+00:00"],
+    "still_eligible_at_release": false,
+    "reason": "outside_[T-24h,T]"
+  },
+  "release_proof_row": {
+    "durable_identity": "product:acme/widget-pro",
+    "record_type": "PRODUCT",
+    "lineage_mode": "live",
+    "provider": "gemini",
+    "has_real_model_output": true,
+    "has_field_evidence": true,
+    "in_public_export": true
+  }
+}

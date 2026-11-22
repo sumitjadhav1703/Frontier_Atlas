@@ -1,0 +1,106 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B7",
+    "purpose": "Mock Sheets projection rows for RAW/stale-clear/secrets-absent contract"
+  },
+  "tabs": {
+    "Startups": [
+      {
+        "schemaVersion": "1.0",
+        "source.name": "B7 Synthetic Directory",
+        "source.url": "https://fixtures.local/b7/startups/aurora-labs",
+        "content.entityName": "Aurora Labs",
+        "content.data.employeeCount": 42,
+        "collectedAt": "2026-11-21T12:00:00Z",
+        "logical_id": "startup:aurora-labs"
+      }
+    ],
+    "Products": [
+      {
+        "schemaVersion": "1.0",
+        "source.name": "B7 Product Catalog",
+        "source.url": "https://fixtures.local/b7/products/aurora-orbit",
+        "content.startupName": "Aurora Labs",
+        "content.pricingModel": "FREEMIUM",
+        "content.productName": "Aurora Orbit",
+        "collectedAt": "2026-11-21T12:00:00Z",
+        "logical_id": "product:aurora-orbit"
+      }
+    ],
+    "Research Papers": [
+      {
+        "schemaVersion": "1.0",
+        "source.name": "B7 Paper Archive",
+        "source.url": "https://fixtures.local/b7/papers/2401.00001",
+        "content.title": "Synthetic Attention for Fixture Pipelines",
+        "content.authors": "[\"A. Researcher\", \"B. Engineer\"]",
+        "content.paper_url": "https://fixtures.local/abs/2401.00001",
+        "content.github_url": "https://github.com/example/synthetic-attention",
+        "content.github_stars": 12,
+        "content.published_date": "2026-01-15T00:00:00Z",
+        "collectedAt": "2026-11-21T12:00:00Z",
+        "logical_id": "paper:2401.00001"
+      }
+    ],
+    "Jobs": [
+      {
+        "schemaVersion": "1.0",
+        "source.name": "B7 Job Board",
+        "source.url": "https://fixtures.local/b7/jobs/aurora-ml-engineer",
+        "content.company": "Aurora Labs",
+        "content.date": "2026-11-21T08:30:00Z",
+        "content.is_remote": true,
+        "content.role_family": "Engineering",
+        "collectedAt": "2026-11-21T12:00:00Z",
+        "logical_id": "job:aurora-ml-engineer"
+      }
+    ],
+    "News": [
+      {
+        "schemaVersion": "1.0",
+        "source.name": "B7 AI News",
+        "source.url": "https://fixtures.local/b7/news/aurora-raises-seed",
+        "content.title": "Aurora Labs announces synthetic seed round",
+        "content.date": "2026-11-21T09:00:00Z",
+        "content.text": "Aurora Labs, a synthetic fixture company, announced a seed round used only for offline pipeline tests.",
+        "content.article_url": "https://fixtures.local/b7/news/aurora-raises-seed",
+        "collectedAt": "2026-11-21T12:00:00Z",
+        "logical_id": "news:aurora-raises-seed"
+      }
+    ],
+    "Entity Mapping Log": [
+      {
+        "entityType": "startup",
+        "rawName": "OpenAI, Inc.",
+        "canonicalName": "OpenAI",
+        "canonicalID": "seed:openai",
+        "method": "comparison_key+alias",
+        "decision": "merged",
+        "evidenceURL": "https://fixtures.local/b7/mapping/openai-inc",
+        "runID": "fixture-b7",
+        "ruleVersion": "fixture-seeds-v1",
+        "logical_id": "mapping:openai-inc"
+      }
+    ]
+  },
+  "formula_like_cells": [
+    {"tab": "Startups", "header": "content.entityName", "value": "=HYPERLINK(\"https://evil.example\",\"x\")"},
+    {"tab": "News", "header": "content.title", "value": "+cmd|' /C calc'!A0"},
+    {"tab": "Products", "header": "content.productName", "value": "@SUM(1+1)"}
+  ],
+  "stale_trailing_rows": {
+    "Startups": [
+      {"content.entityName": "STALE_ROW_SHOULD_CLEAR", "logical_id": "startup:stale-ghost"}
+    ]
+  },
+  "forbidden_secret_substrings": [
+    "AIza",
+    "sk-",
+    "BEGIN PRIVATE KEY",
+    "Bearer ",
+    "password=",
+    "client_secret"
+  ]
+}

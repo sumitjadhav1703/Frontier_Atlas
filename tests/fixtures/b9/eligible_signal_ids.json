@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B9",
+    "purpose": "Frozen source-observation eligible IDs vs public-tab read-back mutations"
+  },
+  "cutoff_utc": "2026-11-23T12:00:00+00:00",
+  "eligible_news_ids": [
+    "news:publisher-a/article-100",
+    "news:publisher-b/article-200",
+    "news:publisher-c/article-300"
+  ],
+  "eligible_job_ids": [
+    "job:employer-x/req-1",
+    "job:employer-y/req-2"
+  ],
+  "tab_news_ids": [
+    "news:publisher-a/article-100",
+    "news:publisher-b/article-200",
+    "news:publisher-c/article-300"
+  ],
+  "tab_jobs_ids": [
+    "job:employer-x/req-1",
+    "job:employer-y/req-2"
+  ],
+  "stale_news_id": "news:publisher-a/article-OLD-outside-window",
+  "empty_tabs_keep_headers": true
+}

@@ -1,0 +1,6 @@
+{
+  "label": "synthetic",
+  "not_for_live_export": true,
+  "block": "B8",
+  "description": "Negative samples for B8 predicate checks only. Never admit to var/live or live DB."
+}

@@ -1,0 +1,160 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B2 papers: versions, deps, shared repo, missing evidence, no-code, drift",
+    "review_date": "2026-11-21",
+    "not_for_live_export": true,
+    "modeled_on": "paperswithcode-data papers + links-between-paper-and-code"
+  },
+  "papers": [
+    {
+      "_synthetic": true,
+      "arxiv_id": "2401.00001v3",
+      "title": "Synthetic Attention for Fixture Pipelines",
+      "authors": ["A. Researcher", "B. Engineer"],
+      "paper_url": "https://arxiv.org/abs/2401.00001v3",
+      "published_date": "2024-06-01T00:00:00Z",
+      "repos": [
+        {
+          "repo_url": "https://github.com/example/synthetic-attention",
+          "is_official": true,
+          "repo_id": "111001"
+        }
+      ]
+    },
+    {
+      "_synthetic": true,
+      "arxiv_id": "2401.00001v1",
+      "title": "Synthetic Attention for Fixture Pipelines",
+      "authors": ["A. Researcher", "B. Engineer"],
+      "paper_url": "https://arxiv.org/abs/2401.00001v1",
+      "published_date": "2024-01-15T00:00:00Z",
+      "repos": [
+        {
+          "repo_url": "https://github.com/example/synthetic-attention",
+          "is_official": true,
+          "repo_id": "111001"
+        }
+      ]
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-dep-only",
+      "arxiv_id": "2402.00002",
+      "title": "A Paper That Only Mentions PyTorch",
+      "authors": ["C. Author"],
+      "paper_url": "https://arxiv.org/abs/2402.00002",
+      "published_date": "2024-02-01T00:00:00Z",
+      "repos": [
+        {
+          "repo_url": "https://github.com/pytorch/pytorch",
+          "repo_name": "pytorch",
+          "framework": true,
+          "is_official": false
+        }
+      ]
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-multi-repo",
+      "arxiv_id": "2403.00003",
+      "title": "Ambiguous Multi Repo Paper",
+      "authors": ["D. Author"],
+      "paper_url": "https://arxiv.org/abs/2403.00003",
+      "published_date": "2024-03-01T00:00:00Z",
+      "repos": [
+        {"repo_url": "https://github.com/example/impl-a", "is_official": false},
+        {"repo_url": "https://github.com/example/impl-b", "is_official": false}
+      ]
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-shared-a",
+      "arxiv_id": "2404.00004",
+      "title": "Shared Repo Paper Alpha",
+      "authors": ["E. Alpha"],
+      "paper_url": "https://arxiv.org/abs/2404.00004",
+      "published_date": "2024-04-01T00:00:00Z",
+      "repos": [
+        {
+          "repo_url": "https://github.com/example/shared-suite",
+          "is_official": true,
+          "repo_id": "222002"
+        }
+      ]
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-shared-b",
+      "arxiv_id": "2404.00005",
+      "title": "Shared Repo Paper Beta",
+      "authors": ["F. Beta"],
+      "paper_url": "https://arxiv.org/abs/2404.00005",
+      "published_date": "2024-04-02T00:00:00Z",
+      "repos": [
+        {
+          "repo_url": "https://github.com/example/shared-suite",
+          "is_official": true,
+          "repo_id": "222002"
+        }
+      ]
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-missing-authors",
+      "arxiv_id": "2405.00006",
+      "title": "Missing Authors Fixture",
+      "authors": [],
+      "paper_url": "https://arxiv.org/abs/2405.00006",
+      "published_date": "2024-05-01T00:00:00Z",
+      "repos": [
+        {
+          "repo_url": "https://github.com/example/missing-authors",
+          "is_official": true
+        }
+      ]
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-no-code",
+      "arxiv_id": "2406.00007",
+      "title": "No Code Links Paper",
+      "authors": ["G. Author"],
+      "paper_url": "https://arxiv.org/abs/2406.00007",
+      "published_date": "2024-06-01T00:00:00Z",
+      "repos": []
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-dead-link",
+      "arxiv_id": "2407.00008",
+      "title": "Dead Link Code Paper",
+      "authors": ["H. Author"],
+      "paper_url": "https://arxiv.org/abs/2407.00008",
+      "published_date": "2024-07-01T00:00:00Z",
+      "repos": [
+        {
+          "repo_url": "https://not-a-github.example/dead/repo",
+          "is_official": true
+        }
+      ]
+    },
+    {
+      "_synthetic": true,
+      "paper_id": "paper-field-drift",
+      "weirdTitleKey": "Drifted Title Should Not Count",
+      "author_list": ["I. Drift"],
+      "link": "https://arxiv.org/abs/2408.00009",
+      "date_published": "2024-08-01T00:00:00Z"
+    }
+  ],
+  "links": [
+    {
+      "_synthetic": true,
+      "arxiv_id": "2401.00001",
+      "repo_url": "https://github.com/example/synthetic-attention",
+      "is_official": true,
+      "repo_id": "111001"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B2 GitHub metrics: rename, zero stars, private/deleted, 304 cache body",
+    "review_date": "2026-11-21",
+    "not_for_live_export": true,
+    "modeled_on": "GitHub REST repos endpoint"
+  },
+  "zero_stars": {
+    "id": 111001,
+    "full_name": "example/synthetic-attention",
+    "html_url": "https://github.com/example/synthetic-attention",
+    "private": false,
+    "stargazers_count": 0
+  },
+  "renamed": {
+    "id": 333003,
+    "full_name": "example/renamed-lib",
+    "html_url": "https://github.com/example/renamed-lib",
+    "private": false,
+    "stargazers_count": 12
+  },
+  "private_flag": {
+    "id": 444004,
+    "full_name": "example/secret",
+    "html_url": "https://github.com/example/secret",
+    "private": true,
+    "stargazers_count": 99
+  },
+  "not_found_message": {
+    "message": "Not Found",
+    "documentation_url": "https://docs.github.com/rest"
+  },
+  "shared_suite": {
+    "id": 222002,
+    "full_name": "example/shared-suite",
+    "html_url": "https://github.com/example/shared-suite",
+    "private": false,
+    "stargazers_count": 7
+  },
+  "drift_missing_stars": {
+    "id": 555005,
+    "full_name": "example/drift-repo",
+    "html_url": "https://github.com/example/drift-repo",
+    "private": false,
+    "watchers_count": 3
+  }
+}

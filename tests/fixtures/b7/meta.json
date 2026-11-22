@@ -1,0 +1,6 @@
+{
+  "label": "synthetic",
+  "not_for_live_export": true,
+  "block": "B7",
+  "description": "Offline integrated replay/export/benchmark fixtures; never admit to live export or Sheets publish"
+}

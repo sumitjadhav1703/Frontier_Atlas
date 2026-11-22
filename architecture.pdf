@@ -1,0 +1,149 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 836 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+50 750 Td
+(AI Signal architecture.pdf \(<=3 pages\)) Tj
+T*
+(Page 1 · Pipeline topology and 500k projection) Tj
+T*
+() Tj
+T*
+(Sources -> discover -> PG queue/leases -> HTTPX pool) Tj
+T*
+(-> shared raw store \(content_key\) -> parse/enrich) Tj
+T*
+(-> grounded LLM extract -> resolve -> six-tab export.) Tj
+T*
+(Bulk: YC, products, papers, arXiv, GitHub. Monitors: 5+5.) Tj
+T*
+(Dual workers: same Postgres + mounted raw root.) Tj
+T*
+() Tj
+T*
+(500k projection \(formula; coefficients PENDING live\):) Tj
+T*
+(T >= max\(stage_work/theta_eff, rate limits, token time\).) Tj
+T*
+(Storage ~= compressed_bytes/item x candidates + indexes.) Tj
+T*
+() Tj
+T*
+(Synthetic 1k/10k: artifacts/gates/b7_benchmark.json) Tj
+T*
+(\(labeled synthetic ? NOT live scrape throughput\).) Tj
+T*
+(LIVE bytes/item, yield, RPS: PENDING \(B8/B9\).) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 743 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+50 750 Td
+(Page 2 · Byte/token budgets, 413/429, circuits) Tj
+T*
+() Tj
+T*
+(Allowable input = context - reserved output - framing) Tj
+T*
+(- safety margin; also provider input + transport caps.) Tj
+T*
+(Split section->paragraph; recount on each fallback.) Tj
+T*
+(Fallback: Gemini -> Groq -> optional Ollama.) Tj
+T*
+(429: honor Retry-After; never shorten server cooldown.) Tj
+T*
+(413 / context 400: re-budget + smaller split \(bounded\).) Tj
+T*
+(Quota exhausted: deny dispatch; abstain or queue.) Tj
+T*
+(Paid spend cap = 0 offline; fake != live qualification.) Tj
+T*
+() Tj
+T*
+(Offline fake traces: B4/B5 gates.) Tj
+T*
+(LIVE redacted provider trace: PENDING B8 unlock.) Tj
+T*
+(Measured live token/latency numbers: PENDING.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 708 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+50 750 Td
+(Page 3 · Identity, freshness, storage trade-offs) Tj
+T*
+() Tj
+T*
+(Semantic task keys, fencing tokens, idempotent upserts.) Tj
+T*
+(Freshness: publication interval subset of [T-24h, T].) Tj
+T*
+(Postgres for identity, metrics history, leases, edges.) Tj
+T*
+(Optional vector/graph stores deferred \(sync cost\).) Tj
+T*
+(Fixture exports segregated + not_for_live_export.) Tj
+T*
+() Tj
+T*
+(Trial results: offline B0-B7 PASS; B8 BLOCKED) Tj
+T*
+(\(no free LLM keys/Ollama; no live >=1000 export\).) Tj
+T*
+(KNOWN GAPS / PENDING: live yield, canary lineage,) Tj
+T*
+(public Sheet read-back, signed-out viewer checks.) Tj
+T*
+(Do not invent measurements. Source: architecture-source.md) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000000379 00000 n 
+0000000505 00000 n 
+0000001392 00000 n 
+0000002186 00000 n 
+0000002945 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+3015
+%%EOF

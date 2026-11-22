@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B2 arXiv metadata with version history; v1 publication date",
+    "review_date": "2026-11-21",
+    "not_for_live_export": true
+  },
+  "id": "http://arxiv.org/abs/2401.00001v3",
+  "arxiv_id": "2401.00001v3",
+  "title": "Synthetic Attention for Fixture Pipelines",
+  "authors": ["A. Researcher", "B. Engineer"],
+  "published": "2024-06-01T12:00:00Z",
+  "versions": [
+    {"version": "v1", "created": "2024-01-15T18:30:00Z"},
+    {"version": "v2", "created": "2024-03-01T10:00:00Z"},
+    {"version": "v3", "created": "2024-06-01T12:00:00Z"}
+  ],
+  "paper_url": "https://arxiv.org/abs/2401.00001"
+}

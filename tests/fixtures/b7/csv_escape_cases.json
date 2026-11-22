@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B7",
+    "purpose": "CSV fallback escaping: spreadsheet formulas, Unicode, embedded newlines"
+  },
+  "cases": [
+    {
+      "id": "formula_equals",
+      "raw": "=1+1",
+      "must_not_start_unquoted_formula": true,
+      "must_contain_escaped_or_prefixed": true
+    },
+    {
+      "id": "formula_plus",
+      "raw": "+cmd|'/C calc'!A0",
+      "must_not_start_unquoted_formula": true
+    },
+    {
+      "id": "formula_at",
+      "raw": "@SUM(A1)",
+      "must_not_start_unquoted_formula": true
+    },
+    {
+      "id": "formula_minus",
+      "raw": "-2+3",
+      "must_not_start_unquoted_formula": true
+    },
+    {
+      "id": "unicode_emoji",
+      "raw": "Aurora Labs — 🚀 seed · 日本語",
+      "must_roundtrip": true
+    },
+    {
+      "id": "embedded_newline",
+      "raw": "line one\nline two\r\nline three",
+      "must_be_quoted": true,
+      "must_roundtrip": true
+    },
+    {
+      "id": "embedded_comma_quote",
+      "raw": "say \"hello\", world",
+      "must_be_quoted": true,
+      "must_roundtrip": true
+    }
+  ]
+}

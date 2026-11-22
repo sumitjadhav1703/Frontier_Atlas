@@ -1,0 +1,120 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B2 products: multi-product owner, plan collapse, ownership, trial vs freemium",
+    "review_date": "2026-11-21",
+    "not_for_live_export": true,
+    "modeled_on": "AgiPicks attributed open product JSON"
+  },
+  "products": [
+    {
+      "_synthetic": true,
+      "product_id": "prod-orbit",
+      "productName": "Orbit",
+      "company": "Aurora Labs",
+      "company_evidenced": true,
+      "url": "https://fixtures.local/products/orbit",
+      "pricing_url": "https://fixtures.local/products/orbit/pricing",
+      "pricing": "freemium",
+      "has_free_tier": true,
+      "has_paid_tier": true,
+      "source_attribution": "directory"
+    },
+    {
+      "_synthetic": true,
+      "product_id": "prod-lens",
+      "productName": "Lens",
+      "owner": "Aurora Labs",
+      "owner_url": "https://fixtures.local/about/aurora",
+      "url": "https://fixtures.local/products/lens",
+      "pricing_url": "https://fixtures.local/products/lens/pricing",
+      "pricingModel": "PAID",
+      "has_paid_tier": true,
+      "source_attribution": "vendor"
+    },
+    {
+      "_synthetic": true,
+      "product_id": "prod-nova",
+      "name": "Nova",
+      "owner": "Nova Inc",
+      "url": "https://fixtures.local/products/nova",
+      "pricing_url": "https://fixtures.local/products/nova/pricing",
+      "tier": "Pro",
+      "price": 29,
+      "plans": [
+        {"name": "Hobby", "type": "free"},
+        {"name": "Pro", "type": "paid", "price": 29},
+        {"name": "Team", "type": "paid", "price": 99}
+      ],
+      "source_attribution": "directory",
+      "owner_evidenced": true
+    },
+    {
+      "_synthetic": true,
+      "product_id": "prod-nova",
+      "name": "Nova",
+      "owner": "Nova Inc",
+      "url": "https://fixtures.local/products/nova",
+      "plan": "Team",
+      "price": 99,
+      "billing": "monthly",
+      "source_attribution": "directory",
+      "owner_evidenced": true,
+      "pricing_evidenced": true
+    },
+    {
+      "_synthetic": true,
+      "product_id": "prod-nova",
+      "name": "Nova",
+      "company": "Nova Inc",
+      "url": "https://fixtures.local/products/nova?locale=eu",
+      "tier": "Hobby",
+      "type": "free",
+      "source_attribution": "directory",
+      "owner_evidenced": true,
+      "pricing": "freemium"
+    },
+    {
+      "_synthetic": true,
+      "product_id": "prod-orphan",
+      "productName": "Orphan Widget",
+      "url": "https://fixtures.local/products/orphan",
+      "pricing_url": "https://fixtures.local/products/orphan/pricing",
+      "pricing": "paid",
+      "has_paid_tier": true
+    },
+    {
+      "_synthetic": true,
+      "product_id": "prod-trial",
+      "productName": "TrialDesk",
+      "owner": "TrialDesk Co",
+      "owner_url": "https://fixtures.local/about/trialdesk",
+      "url": "https://fixtures.local/products/trialdesk",
+      "pricing_url": "https://fixtures.local/products/trialdesk/pricing",
+      "pricing": "paid",
+      "trial_only": true,
+      "has_paid_tier": true,
+      "plans": [
+        {"name": "14-day free trial", "type": "trial"},
+        {"name": "Pro", "type": "paid", "price": 49}
+      ],
+      "source_attribution": "official"
+    },
+    {
+      "_synthetic": true,
+      "product_id": "prod-freemium",
+      "productName": "ForeverFree+",
+      "owner": "FF Plus",
+      "owner_url": "https://fixtures.local/about/ffplus",
+      "url": "https://fixtures.local/products/ffplus",
+      "pricing_url": "https://fixtures.local/products/ffplus/pricing",
+      "has_free_tier": true,
+      "has_paid_tier": true,
+      "plans": [
+        {"name": "Free", "type": "free"},
+        {"name": "Pro", "type": "paid", "price": 19}
+      ],
+      "source_attribution": "vendor"
+    }
+  ]
+}

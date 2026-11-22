@@ -1,0 +1,228 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B7",
+    "purpose": "Mixed fixture corpus with ≥1 accepted and ≥1 rejected item per applicable vertical"
+  },
+  "as_of": "2026-11-21T12:00:00Z",
+  "cutoff_T": "2026-11-21T12:00:00Z",
+  "items": [
+    {
+      "logical_id": "startup:aurora-labs",
+      "vertical": "STARTUP",
+      "decision": "accept",
+      "source_url": "https://fixtures.local/b7/startups/aurora-labs",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "STARTUP",
+        "source": {"name": "B7 Synthetic Directory", "url": "https://fixtures.local/b7/startups/aurora-labs"},
+        "content": {"entityName": "Aurora Labs", "data": {"employeeCount": 42}},
+        "collectedAt": "2026-11-21T12:00:00Z"
+      },
+      "evidence_span": "Aurora Labs",
+      "full_text": "Aurora Labs is a synthetic AI startup fixture used only for offline B7 replay."
+    },
+    {
+      "logical_id": "startup:rejected-no-ai",
+      "vertical": "STARTUP",
+      "decision": "reject",
+      "reason": "outside_ai_scope",
+      "source_url": "https://fixtures.local/b7/startups/rejected-no-ai",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "STARTUP",
+        "source": {"name": "B7 Synthetic Directory", "url": "https://fixtures.local/b7/startups/rejected-no-ai"},
+        "content": {"entityName": "Plumbing Co", "data": {"employeeCount": 3}},
+        "collectedAt": "2026-11-21T12:00:00Z"
+      }
+    },
+    {
+      "logical_id": "product:aurora-orbit",
+      "vertical": "PRODUCT",
+      "decision": "accept",
+      "source_url": "https://fixtures.local/b7/products/aurora-orbit",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "PRODUCT",
+        "source": {"name": "B7 Product Catalog", "url": "https://fixtures.local/b7/products/aurora-orbit"},
+        "content": {"startupName": "Aurora Labs", "pricingModel": "FREEMIUM", "productName": "Aurora Orbit"},
+        "collectedAt": "2026-11-21T12:00:00Z"
+      },
+      "evidence_span": "FREEMIUM",
+      "full_text": "Aurora Orbit pricing: permanent free tier plus paid Pro. Owner: Aurora Labs."
+    },
+    {
+      "logical_id": "product:rejected-no-owner",
+      "vertical": "PRODUCT",
+      "decision": "reject",
+      "reason": "missing_ownership_evidence",
+      "source_url": "https://fixtures.local/b7/products/rejected-no-owner",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "PRODUCT",
+        "source": {"name": "B7 Product Catalog", "url": "https://fixtures.local/b7/products/rejected-no-owner"},
+        "content": {"startupName": "Unknown", "pricingModel": "PAID", "productName": "Orphan Widget"},
+        "collectedAt": "2026-11-21T12:00:00Z"
+      }
+    },
+    {
+      "logical_id": "paper:2401.00001",
+      "vertical": "RESEARCH_PAPER",
+      "decision": "accept",
+      "source_url": "https://fixtures.local/b7/papers/2401.00001",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "RESEARCH_PAPER",
+        "source": {"name": "B7 Paper Archive", "url": "https://fixtures.local/b7/papers/2401.00001"},
+        "content": {
+          "title": "Synthetic Attention for Fixture Pipelines",
+          "authors": ["A. Researcher", "B. Engineer"],
+          "paper_url": "https://fixtures.local/abs/2401.00001",
+          "github_url": "https://github.com/example/synthetic-attention",
+          "github_stars": 12,
+          "published_date": "2026-01-15T00:00:00Z"
+        },
+        "collectedAt": "2026-11-21T12:00:00Z"
+      },
+      "evidence_span": "Synthetic Attention",
+      "full_text": "Abstract: synthetic attention mechanisms for offline fixture replay only."
+    },
+    {
+      "logical_id": "paper:rejected-no-repo",
+      "vertical": "RESEARCH_PAPER",
+      "decision": "reject",
+      "reason": "incomplete_paper_repo_metric_join",
+      "source_url": "https://fixtures.local/b7/papers/rejected-no-repo",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "RESEARCH_PAPER",
+        "source": {"name": "B7 Paper Archive", "url": "https://fixtures.local/b7/papers/rejected-no-repo"},
+        "content": {
+          "title": "Paper Without Repo Join",
+          "authors": ["C. Author"],
+          "paper_url": "https://fixtures.local/abs/9999.99999",
+          "github_url": null,
+          "github_stars": null,
+          "published_date": "2026-02-01T00:00:00Z"
+        },
+        "collectedAt": "2026-11-21T12:00:00Z"
+      }
+    },
+    {
+      "logical_id": "job:aurora-ml-engineer",
+      "vertical": "JOB",
+      "decision": "accept",
+      "source_url": "https://fixtures.local/b7/jobs/aurora-ml-engineer",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "JOB",
+        "source": {"name": "B7 Job Board", "url": "https://fixtures.local/b7/jobs/aurora-ml-engineer"},
+        "content": {
+          "company": "Aurora Labs",
+          "date": "2026-11-21T08:30:00Z",
+          "is_remote": true,
+          "role_family": "Engineering",
+          "title": "ML Engineer"
+        },
+        "collectedAt": "2026-11-21T12:00:00Z"
+      },
+      "evidence_span": "Remote eligible",
+      "full_text": "ML Engineer at Aurora Labs. Fully remote. Requirements: Python, fixtures only."
+    },
+    {
+      "logical_id": "job:rejected-stale",
+      "vertical": "JOB",
+      "decision": "reject",
+      "reason": "outside_freshness_window",
+      "source_url": "https://fixtures.local/b7/jobs/rejected-stale",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "JOB",
+        "source": {"name": "B7 Job Board", "url": "https://fixtures.local/b7/jobs/rejected-stale"},
+        "content": {
+          "company": "Old Co",
+          "date": "2026-11-19T08:00:00Z",
+          "is_remote": false,
+          "role_family": "Engineering",
+          "title": "Stale Role"
+        },
+        "collectedAt": "2026-11-21T12:00:00Z"
+      }
+    },
+    {
+      "logical_id": "news:aurora-raises-seed",
+      "vertical": "NEWS",
+      "decision": "accept",
+      "source_url": "https://fixtures.local/b7/news/aurora-raises-seed",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "NEWS",
+        "source": {"name": "B7 AI News", "url": "https://fixtures.local/b7/news/aurora-raises-seed"},
+        "content": {
+          "title": "Aurora Labs announces synthetic seed round",
+          "date": "2026-11-21T09:00:00Z",
+          "text": "Aurora Labs, a synthetic fixture company, announced a seed round used only for offline pipeline tests. This paragraph is hand-authored synthetic text and must never enter live export.",
+          "article_url": "https://fixtures.local/b7/news/aurora-raises-seed"
+        },
+        "collectedAt": "2026-11-21T12:00:00Z"
+      },
+      "evidence_span": "hand-authored synthetic text",
+      "full_text": "Aurora Labs, a synthetic fixture company, announced a seed round used only for offline pipeline tests. This paragraph is hand-authored synthetic text and must never enter live export. Closing sentence marks article end."
+    },
+    {
+      "logical_id": "news:rejected-teaser",
+      "vertical": "NEWS",
+      "decision": "reject",
+      "reason": "summary_only_incomplete_body",
+      "source_url": "https://fixtures.local/b7/news/rejected-teaser",
+      "body": {
+        "schemaVersion": "1.0",
+        "recordType": "NEWS",
+        "source": {"name": "B7 AI News", "url": "https://fixtures.local/b7/news/rejected-teaser"},
+        "content": {
+          "title": "Teaser Only Headline",
+          "date": "2026-11-21T10:00:00Z",
+          "text": "Subscribe to read more…",
+          "article_url": "https://fixtures.local/b7/news/rejected-teaser"
+        },
+        "collectedAt": "2026-11-21T12:00:00Z"
+      }
+    },
+    {
+      "logical_id": "mapping:openai-inc",
+      "vertical": "ENTITY_MAPPING",
+      "decision": "accept",
+      "source_url": "https://fixtures.local/b7/mapping/openai-inc",
+      "body": {
+        "entityType": "startup",
+        "rawName": "OpenAI, Inc.",
+        "canonicalName": "OpenAI",
+        "canonicalID": "seed:openai",
+        "method": "comparison_key+alias",
+        "decision": "merged",
+        "evidenceURL": "https://fixtures.local/b7/mapping/openai-inc",
+        "runID": "fixture-b7",
+        "ruleVersion": "fixture-seeds-v1"
+      }
+    },
+    {
+      "logical_id": "mapping:ambiguous-ai",
+      "vertical": "ENTITY_MAPPING",
+      "decision": "reject",
+      "reason": "collision_abstain",
+      "source_url": "https://fixtures.local/b7/mapping/ambiguous-ai",
+      "body": {
+        "entityType": "startup",
+        "rawName": "AI",
+        "canonicalName": null,
+        "canonicalID": null,
+        "method": "collision",
+        "decision": "abstain",
+        "evidenceURL": "https://fixtures.local/b7/mapping/ambiguous-ai",
+        "runID": "fixture-b7",
+        "ruleVersion": "fixture-seeds-v1"
+      }
+    }
+  ]
+}

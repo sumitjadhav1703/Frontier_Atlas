@@ -1,0 +1,13 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "news_arstechnica"},
+  "_synthetic": true,
+  "id": "ars-synth-1",
+  "title": "Ars Technica synthetic AI fixture",
+  "url": "https://arstechnica.com/ai/2026/11/synth/",
+  "article_url": "https://arstechnica.com/ai/2026/11/synth/",
+  "datePublished": "2026-11-21T06:00:00-05:00",
+  "paragraphs": [
+    "FIRST_PARA_ARS Index teaser must not replace detail body.",
+    "LAST_PARA_ARS Detail closing paragraph."
+  ]
+}

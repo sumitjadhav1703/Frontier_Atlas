@@ -1,0 +1,6 @@
+---
+description: Repository-wide rules for the AI Engineer internship build
+alwaysApply: true
+---
+
+Read cursor.md for startup, queue dispatch, agent roles and routine decisions. Follow AGENTS.md. Use docs/assessment.md for employer requirements, docs/build-plan.md for the current ticket, docs/contracts.md for field rules, and notes/progress.md for state. Execute one dependency-ready block per request. Delegate implementation, tests and review as described in AGENTS.md. Keep live calls off through B7. Never publish a fixture or mark a gate passed from a plan, mock log or inferred result.

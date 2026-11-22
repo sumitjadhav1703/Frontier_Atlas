@@ -1,0 +1,1040 @@
+{
+  "format_version": "1.0",
+  "revision": "fixture-b6-gate-v1",
+  "lineage_mode": "fixture",
+  "rule_version": "resolution-v1",
+  "identities": [
+    {
+      "id": "fixture.startup.openai",
+      "namespace": "startup",
+      "canonical_name": "OpenAI",
+      "aliases": [
+        "OpenAI, Inc.",
+        "Open AI",
+        "openai inc"
+      ],
+      "domains": [
+        "openai.com"
+      ],
+      "source_ids": {
+        "yc": "openai",
+        "directory": "openai"
+      },
+      "evidence_url": "https://www.openai.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.anthropic",
+      "namespace": "startup",
+      "canonical_name": "Anthropic",
+      "aliases": [
+        "Anthropic PBC",
+        "Anthropic, PBC"
+      ],
+      "domains": [
+        "anthropic.com"
+      ],
+      "source_ids": {
+        "directory": "anthropic"
+      },
+      "evidence_url": "https://www.anthropic.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.google-deepmind",
+      "namespace": "startup",
+      "canonical_name": "Google DeepMind",
+      "aliases": [
+        "DeepMind",
+        "DeepMind Technologies",
+        "Deep Mind"
+      ],
+      "domains": [
+        "deepmind.google",
+        "deepmind.com"
+      ],
+      "source_ids": {
+        "directory": "deepmind"
+      },
+      "evidence_url": "https://deepmind.google/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.mistral",
+      "namespace": "startup",
+      "canonical_name": "Mistral AI",
+      "aliases": [
+        "Mistral",
+        "Mistral AI SAS"
+      ],
+      "domains": [
+        "mistral.ai"
+      ],
+      "source_ids": {
+        "directory": "mistral"
+      },
+      "evidence_url": "https://mistral.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.cohere",
+      "namespace": "startup",
+      "canonical_name": "Cohere",
+      "aliases": [
+        "Cohere Inc.",
+        "Cohere, Inc."
+      ],
+      "domains": [
+        "cohere.com"
+      ],
+      "source_ids": {
+        "directory": "cohere"
+      },
+      "evidence_url": "https://cohere.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.huggingface",
+      "namespace": "startup",
+      "canonical_name": "Hugging Face",
+      "aliases": [
+        "HuggingFace",
+        "Hugging Face, Inc."
+      ],
+      "domains": [
+        "huggingface.co"
+      ],
+      "source_ids": {
+        "directory": "huggingface"
+      },
+      "evidence_url": "https://huggingface.co/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.stability",
+      "namespace": "startup",
+      "canonical_name": "Stability AI",
+      "aliases": [
+        "StabilityAI",
+        "Stability AI Ltd"
+      ],
+      "domains": [
+        "stability.ai"
+      ],
+      "source_ids": {
+        "directory": "stability-ai"
+      },
+      "evidence_url": "https://stability.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.adept",
+      "namespace": "startup",
+      "canonical_name": "Adept",
+      "aliases": [
+        "Adept AI",
+        "Adept, Inc."
+      ],
+      "domains": [
+        "adept.ai"
+      ],
+      "source_ids": {
+        "directory": "adept"
+      },
+      "evidence_url": "https://www.adept.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.inflection",
+      "namespace": "startup",
+      "canonical_name": "Inflection AI",
+      "aliases": [
+        "Inflection",
+        "Inflection AI, Inc."
+      ],
+      "domains": [
+        "inflection.ai"
+      ],
+      "source_ids": {
+        "directory": "inflection"
+      },
+      "evidence_url": "https://inflection.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.character",
+      "namespace": "startup",
+      "canonical_name": "Character.AI",
+      "aliases": [
+        "Character AI",
+        "Character Technologies"
+      ],
+      "domains": [
+        "character.ai"
+      ],
+      "source_ids": {
+        "directory": "character-ai"
+      },
+      "evidence_url": "https://character.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.perplexity",
+      "namespace": "startup",
+      "canonical_name": "Perplexity AI",
+      "aliases": [
+        "Perplexity",
+        "Perplexity AI, Inc."
+      ],
+      "domains": [
+        "perplexity.ai"
+      ],
+      "source_ids": {
+        "directory": "perplexity"
+      },
+      "evidence_url": "https://www.perplexity.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.runway",
+      "namespace": "startup",
+      "canonical_name": "Runway",
+      "aliases": [
+        "Runway ML",
+        "Runway AI, Inc."
+      ],
+      "domains": [
+        "runwayml.com"
+      ],
+      "source_ids": {
+        "directory": "runway"
+      },
+      "evidence_url": "https://runwayml.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.midjourney",
+      "namespace": "startup",
+      "canonical_name": "Midjourney",
+      "aliases": [
+        "MidJourney",
+        "Midjourney, Inc."
+      ],
+      "domains": [
+        "midjourney.com"
+      ],
+      "source_ids": {
+        "directory": "midjourney"
+      },
+      "evidence_url": "https://www.midjourney.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.scale",
+      "namespace": "startup",
+      "canonical_name": "Scale AI",
+      "aliases": [
+        "Scale",
+        "Scale AI, Inc."
+      ],
+      "domains": [
+        "scale.com"
+      ],
+      "source_ids": {
+        "yc": "scale",
+        "directory": "scale-ai"
+      },
+      "evidence_url": "https://scale.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.databricks",
+      "namespace": "startup",
+      "canonical_name": "Databricks",
+      "aliases": [
+        "Databricks Inc.",
+        "Databricks, Inc."
+      ],
+      "domains": [
+        "databricks.com"
+      ],
+      "source_ids": {
+        "directory": "databricks"
+      },
+      "evidence_url": "https://www.databricks.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.snowflake",
+      "namespace": "startup",
+      "canonical_name": "Snowflake",
+      "aliases": [
+        "Snowflake Inc.",
+        "Snowflake Computing"
+      ],
+      "domains": [
+        "snowflake.com"
+      ],
+      "source_ids": {
+        "directory": "snowflake"
+      },
+      "evidence_url": "https://www.snowflake.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.weights-biases",
+      "namespace": "startup",
+      "canonical_name": "Weights & Biases",
+      "aliases": [
+        "Weights and Biases",
+        "W&B",
+        "wandb"
+      ],
+      "domains": [
+        "wandb.ai"
+      ],
+      "source_ids": {
+        "directory": "wandb"
+      },
+      "evidence_url": "https://wandb.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.langchain",
+      "namespace": "startup",
+      "canonical_name": "LangChain",
+      "aliases": [
+        "LangChain Inc.",
+        "Lang Chain"
+      ],
+      "domains": [
+        "langchain.com"
+      ],
+      "source_ids": {
+        "directory": "langchain"
+      },
+      "evidence_url": "https://www.langchain.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.together",
+      "namespace": "startup",
+      "canonical_name": "Together AI",
+      "aliases": [
+        "Together",
+        "Together Computer"
+      ],
+      "domains": [
+        "together.ai"
+      ],
+      "source_ids": {
+        "directory": "together"
+      },
+      "evidence_url": "https://www.together.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.fireworks",
+      "namespace": "startup",
+      "canonical_name": "Fireworks AI",
+      "aliases": [
+        "Fireworks",
+        "Fireworks AI, Inc."
+      ],
+      "domains": [
+        "fireworks.ai"
+      ],
+      "source_ids": {
+        "directory": "fireworks"
+      },
+      "evidence_url": "https://fireworks.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.groq",
+      "namespace": "startup",
+      "canonical_name": "Groq",
+      "aliases": [
+        "Groq, Inc.",
+        "Groq Inc"
+      ],
+      "domains": [
+        "groq.com"
+      ],
+      "source_ids": {
+        "directory": "groq"
+      },
+      "evidence_url": "https://groq.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.anyscale",
+      "namespace": "startup",
+      "canonical_name": "Anyscale",
+      "aliases": [
+        "Anyscale Inc.",
+        "Any Scale"
+      ],
+      "domains": [
+        "anyscale.com"
+      ],
+      "source_ids": {
+        "directory": "anyscale"
+      },
+      "evidence_url": "https://www.anyscale.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.replicate",
+      "namespace": "startup",
+      "canonical_name": "Replicate",
+      "aliases": [
+        "Replicate, Inc.",
+        "Replicate Inc"
+      ],
+      "domains": [
+        "replicate.com"
+      ],
+      "source_ids": {
+        "directory": "replicate"
+      },
+      "evidence_url": "https://replicate.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.jasper",
+      "namespace": "startup",
+      "canonical_name": "Jasper",
+      "aliases": [
+        "Jasper AI",
+        "Jasper.ai"
+      ],
+      "domains": [
+        "jasper.ai"
+      ],
+      "source_ids": {
+        "directory": "jasper"
+      },
+      "evidence_url": "https://www.jasper.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.copyai",
+      "namespace": "startup",
+      "canonical_name": "Copy.ai",
+      "aliases": [
+        "CopyAI",
+        "Copy AI"
+      ],
+      "domains": [
+        "copy.ai"
+      ],
+      "source_ids": {
+        "directory": "copy-ai"
+      },
+      "evidence_url": "https://www.copy.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.notion",
+      "namespace": "startup",
+      "canonical_name": "Notion",
+      "aliases": [
+        "Notion Labs",
+        "Notion Labs, Inc."
+      ],
+      "domains": [
+        "notion.so"
+      ],
+      "source_ids": {
+        "directory": "notion"
+      },
+      "evidence_url": "https://www.notion.so/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.cognition",
+      "namespace": "startup",
+      "canonical_name": "Cognition",
+      "aliases": [
+        "Cognition AI",
+        "Cognition Labs"
+      ],
+      "domains": [
+        "cognition.ai"
+      ],
+      "source_ids": {
+        "directory": "cognition"
+      },
+      "evidence_url": "https://www.cognition.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.xai",
+      "namespace": "startup",
+      "canonical_name": "xAI",
+      "aliases": [
+        "xAI Corp",
+        "xAI, Corp."
+      ],
+      "domains": [
+        "x.ai"
+      ],
+      "source_ids": {
+        "directory": "xai"
+      },
+      "evidence_url": "https://x.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.nvidia",
+      "namespace": "startup",
+      "canonical_name": "NVIDIA",
+      "aliases": [
+        "NVIDIA Corporation",
+        "Nvidia Corp"
+      ],
+      "domains": [
+        "nvidia.com"
+      ],
+      "source_ids": {
+        "directory": "nvidia"
+      },
+      "evidence_url": "https://www.nvidia.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.sakana",
+      "namespace": "startup",
+      "canonical_name": "Sakana AI",
+      "aliases": [
+        "Sakana",
+        "株式会社Sakana AI"
+      ],
+      "domains": [
+        "sakana.ai"
+      ],
+      "source_ids": {
+        "directory": "sakana"
+      },
+      "evidence_url": "https://sakana.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.preferred-networks",
+      "namespace": "startup",
+      "canonical_name": "Preferred Networks",
+      "aliases": [
+        "Preferred Networks, Inc.",
+        "PFN",
+        "プリファードネットワークス"
+      ],
+      "domains": [
+        "preferred.jp"
+      ],
+      "source_ids": {
+        "directory": "preferred-networks"
+      },
+      "evidence_url": "https://www.preferred.jp/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.yandex",
+      "namespace": "startup",
+      "canonical_name": "Yandex",
+      "aliases": [
+        "Яндекс",
+        "Yandex N.V."
+      ],
+      "domains": [
+        "yandex.com",
+        "ya.ru"
+      ],
+      "source_ids": {
+        "directory": "yandex"
+      },
+      "evidence_url": "https://yandex.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.baidu",
+      "namespace": "startup",
+      "canonical_name": "Baidu",
+      "aliases": [
+        "百度",
+        "Baidu, Inc."
+      ],
+      "domains": [
+        "baidu.com"
+      ],
+      "source_ids": {
+        "directory": "baidu"
+      },
+      "evidence_url": "https://www.baidu.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.moonshot",
+      "namespace": "startup",
+      "canonical_name": "Moonshot AI",
+      "aliases": [
+        "Moonshot",
+        "月之暗面"
+      ],
+      "domains": [
+        "moonshot.cn"
+      ],
+      "source_ids": {
+        "directory": "moonshot"
+      },
+      "evidence_url": "https://www.moonshot.cn/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.01ai",
+      "namespace": "startup",
+      "canonical_name": "01.AI",
+      "aliases": [
+        "01 AI",
+        "零一万物"
+      ],
+      "domains": [
+        "01.ai"
+      ],
+      "source_ids": {
+        "directory": "01-ai"
+      },
+      "evidence_url": "https://www.01.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.ai-corp",
+      "namespace": "startup",
+      "canonical_name": "AI",
+      "aliases": [
+        "AI Corp",
+        "AI Corporation"
+      ],
+      "domains": [
+        "ai-corp.example"
+      ],
+      "source_ids": {
+        "directory": "ai-corp"
+      },
+      "evidence_url": "https://ai-corp.example/",
+      "owner_id": null,
+      "metadata": {
+        "collision_group": "ai-vs-ai-dot"
+      }
+    },
+    {
+      "id": "fixture.startup.a-i-labs",
+      "namespace": "startup",
+      "canonical_name": "A.I.",
+      "aliases": [
+        "A.I. Labs",
+        "A.I. Lab"
+      ],
+      "domains": [
+        "a-i-labs.example"
+      ],
+      "source_ids": {
+        "directory": "a-i-labs"
+      },
+      "evidence_url": "https://a-i-labs.example/",
+      "owner_id": null,
+      "metadata": {
+        "collision_group": "ai-vs-ai-dot"
+      }
+    },
+    {
+      "id": "fixture.startup.northwind-ml",
+      "namespace": "startup",
+      "canonical_name": "Northwind ML",
+      "aliases": [
+        "Northwind Machine Learning",
+        "NorthwindML"
+      ],
+      "domains": [
+        "shared-host.example"
+      ],
+      "source_ids": {
+        "directory": "northwind-ml"
+      },
+      "evidence_url": "https://shared-host.example/northwind/",
+      "owner_id": null,
+      "metadata": {
+        "shared_host": "shared-host.example"
+      }
+    },
+    {
+      "id": "fixture.startup.southwind-ai",
+      "namespace": "startup",
+      "canonical_name": "Southwind AI",
+      "aliases": [
+        "Southwind",
+        "Southwind Artificial Intelligence"
+      ],
+      "domains": [
+        "shared-host.example"
+      ],
+      "source_ids": {
+        "directory": "southwind-ai"
+      },
+      "evidence_url": "https://shared-host.example/southwind/",
+      "owner_id": null,
+      "metadata": {
+        "shared_host": "shared-host.example"
+      }
+    },
+    {
+      "id": "fixture.startup.apollo-ai",
+      "namespace": "startup",
+      "canonical_name": "Apollo AI",
+      "aliases": [
+        "ApolloAI"
+      ],
+      "domains": [
+        "apollo-ai.example"
+      ],
+      "source_ids": {
+        "directory": "apollo-ai"
+      },
+      "evidence_url": "https://apollo-ai.example/",
+      "owner_id": null,
+      "metadata": {
+        "homonym_group": "apollo"
+      }
+    },
+    {
+      "id": "fixture.startup.apollo-research",
+      "namespace": "startup",
+      "canonical_name": "Apollo Research",
+      "aliases": [
+        "Apollo Research Ltd"
+      ],
+      "domains": [
+        "apollo-research.example"
+      ],
+      "source_ids": {
+        "directory": "apollo-research"
+      },
+      "evidence_url": "https://apollo-research.example/",
+      "owner_id": null,
+      "metadata": {
+        "homonym_group": "apollo"
+      }
+    },
+    {
+      "id": "fixture.startup.openai-global",
+      "namespace": "startup",
+      "canonical_name": "OpenAI Global",
+      "aliases": [
+        "OpenAI Global LLC"
+      ],
+      "domains": [
+        "openai-global.example"
+      ],
+      "source_ids": {
+        "directory": "openai-global"
+      },
+      "evidence_url": "https://openai-global.example/",
+      "owner_id": null,
+      "metadata": {
+        "relation": "subsidiary_of",
+        "parent_id": "fixture.startup.openai"
+      }
+    },
+    {
+      "id": "fixture.startup.writer",
+      "namespace": "startup",
+      "canonical_name": "Writer",
+      "aliases": [
+        "Writer.com",
+        "Writer Inc."
+      ],
+      "domains": [
+        "writer.com"
+      ],
+      "source_ids": {
+        "directory": "writer"
+      },
+      "evidence_url": "https://writer.com/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.adept-robotics",
+      "namespace": "startup",
+      "canonical_name": "Figure AI",
+      "aliases": [
+        "Figure",
+        "Figure AI Inc."
+      ],
+      "domains": [
+        "figure.ai"
+      ],
+      "source_ids": {
+        "directory": "figure"
+      },
+      "evidence_url": "https://www.figure.ai/",
+      "owner_id": null,
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.chatgpt",
+      "namespace": "product",
+      "canonical_name": "ChatGPT",
+      "aliases": [
+        "Chat GPT",
+        "ChatGPT Plus"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://chatgpt.com/",
+      "owner_id": "fixture.startup.openai",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.claude",
+      "namespace": "product",
+      "canonical_name": "Claude",
+      "aliases": [
+        "Claude AI",
+        "Claude 3"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://claude.ai/",
+      "owner_id": "fixture.startup.anthropic",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.gemini",
+      "namespace": "product",
+      "canonical_name": "Gemini",
+      "aliases": [
+        "Google Gemini",
+        "Gemini AI"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://gemini.google.com/",
+      "owner_id": "fixture.startup.google-deepmind",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.mistral-large",
+      "namespace": "product",
+      "canonical_name": "Mistral Large",
+      "aliases": [
+        "mistral-large"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://mistral.ai/",
+      "owner_id": "fixture.startup.mistral",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.command-r",
+      "namespace": "product",
+      "canonical_name": "Command R",
+      "aliases": [
+        "Command-R",
+        "Cohere Command R"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://cohere.com/",
+      "owner_id": "fixture.startup.cohere",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.studio-openai",
+      "namespace": "product",
+      "canonical_name": "Studio",
+      "aliases": [
+        "OpenAI Studio"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://platform.openai.com/",
+      "owner_id": "fixture.startup.openai",
+      "metadata": {
+        "cross_owner_name": "Studio"
+      }
+    },
+    {
+      "id": "fixture.product.studio-huggingface",
+      "namespace": "product",
+      "canonical_name": "Studio",
+      "aliases": [
+        "HF Studio",
+        "Hugging Face Studio"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://huggingface.co/",
+      "owner_id": "fixture.startup.huggingface",
+      "metadata": {
+        "cross_owner_name": "Studio"
+      }
+    },
+    {
+      "id": "fixture.product.stable-diffusion",
+      "namespace": "product",
+      "canonical_name": "Stable Diffusion",
+      "aliases": [
+        "SDXL",
+        "StableDiffusion"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://stability.ai/",
+      "owner_id": "fixture.startup.stability",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.pi",
+      "namespace": "product",
+      "canonical_name": "Pi",
+      "aliases": [
+        "Inflection Pi",
+        "Pi AI"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://pi.ai/",
+      "owner_id": "fixture.startup.inflection",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.product.grok",
+      "namespace": "product",
+      "canonical_name": "Grok",
+      "aliases": [
+        "xAI Grok"
+      ],
+      "domains": [],
+      "source_ids": {},
+      "evidence_url": "https://x.ai/",
+      "owner_id": "fixture.startup.xai",
+      "metadata": {}
+    },
+    {
+      "id": "fixture.startup.rakuten-ai",
+      "namespace": "startup",
+      "canonical_name": "楽天AI",
+      "aliases": [
+        "Rakuten AI",
+        "Rakuten AI Lab"
+      ],
+      "domains": [
+        "ai.rakuten.co.jp"
+      ],
+      "source_ids": {
+        "directory": "rakuten-ai"
+      },
+      "evidence_url": "https://ai.rakuten.co.jp/",
+      "owner_id": null,
+      "metadata": {
+        "label": "synthetic"
+      }
+    },
+    {
+      "id": "fixture.startup.google",
+      "namespace": "startup",
+      "canonical_name": "Google",
+      "aliases": [
+        "Google LLC",
+        "Alphabet Google"
+      ],
+      "domains": [
+        "google.com"
+      ],
+      "source_ids": {
+        "directory": "google"
+      },
+      "evidence_url": "https://www.google.com/",
+      "owner_id": null,
+      "metadata": {
+        "label": "synthetic"
+      }
+    },
+    {
+      "id": "fixture.startup.nexus-alpha",
+      "namespace": "startup",
+      "canonical_name": "Nexus",
+      "aliases": [
+        "Nexus Alpha",
+        "Nexus Alpha Labs"
+      ],
+      "domains": [
+        "nexus-alpha.example"
+      ],
+      "source_ids": {
+        "directory": "nexus-alpha"
+      },
+      "evidence_url": "https://nexus-alpha.example/",
+      "owner_id": null,
+      "metadata": {
+        "label": "synthetic"
+      }
+    },
+    {
+      "id": "fixture.startup.nexus-analytics",
+      "namespace": "startup",
+      "canonical_name": "Nexus Analytics",
+      "aliases": [
+        "Nexus Analytics GmbH"
+      ],
+      "domains": [
+        "nexus-analytics.example"
+      ],
+      "source_ids": {
+        "directory": "nexus-analytics"
+      },
+      "evidence_url": "https://nexus-analytics.example/",
+      "owner_id": null,
+      "metadata": {
+        "label": "synthetic"
+      }
+    }
+  ]
+}

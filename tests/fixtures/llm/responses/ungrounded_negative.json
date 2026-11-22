@@ -1,0 +1,25 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true},
+  "fields": {
+    "productName": {
+      "value": "Beta Widget",
+      "quote": "Beta Widget",
+      "segment_ids": ["TITLE"]
+    },
+    "owner": {
+      "value": "Beta Systems LLC",
+      "quote": "Beta Widget is operated by Beta Systems LLC.",
+      "segment_ids": ["OWNER"]
+    },
+    "pricingModel": {
+      "value": "FREEMIUM",
+      "quote": "Documentation is open source",
+      "segment_ids": ["BODY"]
+    },
+    "price": {
+      "value": "$0",
+      "quote": "contact us",
+      "segment_ids": ["BODY"]
+    }
+  }
+}

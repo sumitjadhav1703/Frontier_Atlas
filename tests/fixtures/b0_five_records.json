@@ -1,0 +1,85 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B0 five typed record acceptance",
+    "review_date": "2026-11-21",
+    "not_for_live_export": true
+  },
+  "records": [
+    {
+      "schemaVersion": "1.0",
+      "recordType": "STARTUP",
+      "source": {
+        "name": "Synthetic Startup Directory",
+        "url": "https://fixtures.local/startups/aurora-labs"
+      },
+      "content": {
+        "entityName": "Aurora Labs",
+        "data": {
+          "employeeCount": 42
+        }
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    {
+      "schemaVersion": "1.0",
+      "recordType": "PRODUCT",
+      "source": {
+        "name": "Synthetic Product Catalog",
+        "url": "https://fixtures.local/products/aurora-orbit"
+      },
+      "content": {
+        "startupName": "Aurora Labs",
+        "pricingModel": "FREEMIUM"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    {
+      "schemaVersion": "1.0",
+      "recordType": "RESEARCH_PAPER",
+      "source": {
+        "name": "Synthetic Paper Archive",
+        "url": "https://fixtures.local/papers/2401.00001"
+      },
+      "content": {
+        "title": "Synthetic Attention for Fixture Pipelines",
+        "authors": ["A. Researcher", "B. Engineer"],
+        "paper_url": "https://fixtures.local/abs/2401.00001",
+        "github_url": "https://github.com/example/synthetic-attention",
+        "github_stars": 0,
+        "published_date": "2026-01-15T00:00:00Z"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    {
+      "schemaVersion": "1.0",
+      "recordType": "JOB",
+      "source": {
+        "name": "Synthetic Job Board",
+        "url": "https://fixtures.local/jobs/aurora-ml-engineer"
+      },
+      "content": {
+        "company": "Aurora Labs",
+        "date": "2026-11-21T08:30:00Z",
+        "is_remote": true,
+        "role_family": "Engineering"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    {
+      "schemaVersion": "1.0",
+      "recordType": "NEWS",
+      "source": {
+        "name": "Synthetic AI News",
+        "url": "https://fixtures.local/news/aurora-raises-seed"
+      },
+      "content": {
+        "title": "Aurora Labs announces synthetic seed round",
+        "date": "2026-11-21T09:00:00Z",
+        "text": "Aurora Labs, a synthetic fixture company, announced a seed round used only for offline pipeline tests. This paragraph is hand-authored synthetic text and must never enter live export.",
+        "article_url": "https://fixtures.local/news/aurora-raises-seed"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    }
+  ]
+}

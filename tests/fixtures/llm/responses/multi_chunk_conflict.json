@@ -1,0 +1,23 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true},
+  "chunk_responses": [
+    {
+      "fields": {
+        "pricingModel": {
+          "value": "FREE",
+          "quote": "Orbit Metrics public pricing: Paid. Starter is $49/month with no free tier.",
+          "segment_ids": ["PRICING"]
+        }
+      }
+    },
+    {
+      "fields": {
+        "pricingModel": {
+          "value": "PAID",
+          "quote": "Orbit Metrics public pricing: Paid. Starter is $49/month with no free tier.",
+          "segment_ids": ["PRICING"]
+        }
+      }
+    }
+  ]
+}

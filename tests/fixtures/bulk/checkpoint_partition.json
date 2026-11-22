@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B2 checkpoint replay: insert-before-offset and truncated replacement page",
+    "review_date": "2026-11-21",
+    "not_for_live_export": true
+  },
+  "revision_v1": {
+    "partition": "ai-tag-0",
+    "companies": [
+      {
+        "_synthetic": true,
+        "id": "yc-cp-a",
+        "slug": "cp-alpha",
+        "name": "CP Alpha",
+        "url": "https://www.ycombinator.com/companies/cp-alpha",
+        "tags": ["AI"],
+        "team_size": 5
+      },
+      {
+        "_synthetic": true,
+        "id": "yc-cp-b",
+        "slug": "cp-beta",
+        "name": "CP Beta",
+        "url": "https://www.ycombinator.com/companies/cp-beta",
+        "tags": ["Machine Learning"],
+        "team_size": 8
+      }
+    ]
+  },
+  "revision_v2_insert_before_and_truncate": {
+    "partition": "ai-tag-0",
+    "companies": [
+      {
+        "_synthetic": true,
+        "id": "yc-cp-z",
+        "slug": "cp-zeta",
+        "name": "CP Zeta",
+        "url": "https://www.ycombinator.com/companies/cp-zeta",
+        "tags": ["LLM"],
+        "team_size": 3
+      },
+      {
+        "_synthetic": true,
+        "id": "yc-cp-a",
+        "slug": "cp-alpha",
+        "name": "CP Alpha",
+        "url": "https://www.ycombinator.com/companies/cp-alpha",
+        "tags": ["Artificial Intelligence"],
+        "team_size": 6
+      }
+    ]
+  }
+}

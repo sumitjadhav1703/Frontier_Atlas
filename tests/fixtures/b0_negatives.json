@@ -1,0 +1,113 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B0 validation rejection cases",
+    "not_for_live_export": true
+  },
+  "cases": {
+    "missing_required_entityName": {
+      "schemaVersion": "1.0",
+      "recordType": "STARTUP",
+      "source": {
+        "name": "Synthetic Startup Directory",
+        "url": "https://fixtures.local/startups/missing-name"
+      },
+      "content": {
+        "data": {
+          "employeeCount": 3
+        }
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    "wrong_case_entity_name": {
+      "schemaVersion": "1.0",
+      "recordType": "STARTUP",
+      "source": {
+        "name": "Synthetic Startup Directory",
+        "url": "https://fixtures.local/startups/wrong-case"
+      },
+      "content": {
+        "entity_name": "Wrong Case Co",
+        "data": {
+          "employeeCount": 3
+        }
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    "invalid_pricing_model": {
+      "schemaVersion": "1.0",
+      "recordType": "PRODUCT",
+      "source": {
+        "name": "Synthetic Product Catalog",
+        "url": "https://fixtures.local/products/bad-price"
+      },
+      "content": {
+        "startupName": "Aurora Labs",
+        "pricingModel": "subscription"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    "negative_github_stars": {
+      "schemaVersion": "1.0",
+      "recordType": "RESEARCH_PAPER",
+      "source": {
+        "name": "Synthetic Paper Archive",
+        "url": "https://fixtures.local/papers/neg-stars"
+      },
+      "content": {
+        "title": "Negative Stars Paper",
+        "authors": ["A. Author"],
+        "paper_url": "https://fixtures.local/abs/neg-stars",
+        "github_url": "https://github.com/example/neg-stars",
+        "github_stars": -1,
+        "published_date": "2026-01-15T00:00:00Z"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    "naive_collected_at": {
+      "schemaVersion": "1.0",
+      "recordType": "STARTUP",
+      "source": {
+        "name": "Synthetic Startup Directory",
+        "url": "https://fixtures.local/startups/naive-time"
+      },
+      "content": {
+        "entityName": "Naive Time Co",
+        "data": {
+          "employeeCount": 1
+        }
+      },
+      "collectedAt": "2026-11-21T12:00:00"
+    },
+    "is_remote_as_int": {
+      "schemaVersion": "1.0",
+      "recordType": "JOB",
+      "source": {
+        "name": "Synthetic Job Board",
+        "url": "https://fixtures.local/jobs/int-remote"
+      },
+      "content": {
+        "company": "Aurora Labs",
+        "date": "2026-11-21T08:30:00Z",
+        "is_remote": 1,
+        "role_family": "Engineering"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    },
+    "is_remote_as_zero": {
+      "schemaVersion": "1.0",
+      "recordType": "JOB",
+      "source": {
+        "name": "Synthetic Job Board",
+        "url": "https://fixtures.local/jobs/zero-remote"
+      },
+      "content": {
+        "company": "Aurora Labs",
+        "date": "2026-11-21T08:30:00Z",
+        "is_remote": 0,
+        "role_family": "Engineering"
+      },
+      "collectedAt": "2026-11-21T12:00:00Z"
+    }
+  }
+}

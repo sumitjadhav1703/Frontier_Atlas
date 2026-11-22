@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "purpose": "broken_claim_fake_provider_as_live"
+  },
+  "live_success": true,
+  "status": "success",
+  "provider": "fake",
+  "model": "fake-extract-v1",
+  "durable_identity": "product:synthetic-should-never-qualify",
+  "canonical_entity_id": "ent_fixture_leak",
+  "export_row_id": "product:synthetic-should-never-qualify",
+  "accepted_field_evidence": {
+    "content.pricingModel": {
+      "quote": "synthetic",
+      "segment_id": "seg0"
+    }
+  }
+}

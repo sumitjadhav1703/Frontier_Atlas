@@ -1,0 +1,519 @@
+{
+  "format_version": "1.0",
+  "identities": [
+    {
+      "aliases": [
+        "leadgenius"
+      ],
+      "canonical_name": "LeadGenius",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/leadgenius",
+      "id": "live.startup.105",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "105"
+      }
+    },
+    {
+      "aliases": [
+        "directed-edge"
+      ],
+      "canonical_name": "Directed Edge",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/directed-edge",
+      "id": "live.startup.245",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "245"
+      }
+    },
+    {
+      "aliases": [
+        "olark"
+      ],
+      "canonical_name": "Olark",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/olark",
+      "id": "live.startup.249",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "249"
+      }
+    },
+    {
+      "aliases": [
+        "justspotted"
+      ],
+      "canonical_name": "JustSpotted",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/justspotted",
+      "id": "live.startup.289",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "289"
+      }
+    },
+    {
+      "aliases": [
+        "canopy-labs"
+      ],
+      "canonical_name": "Canopy Labs",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/canopy-labs",
+      "id": "live.startup.391",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "391"
+      }
+    },
+    {
+      "aliases": [
+        "plivo"
+      ],
+      "canonical_name": "Plivo",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/plivo",
+      "id": "live.startup.464",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "464"
+      }
+    },
+    {
+      "aliases": [
+        "radar"
+      ],
+      "canonical_name": "RADAR",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/radar",
+      "id": "live.startup.493",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "493"
+      }
+    },
+    {
+      "aliases": [
+        "semantics3"
+      ],
+      "canonical_name": "Semantics3",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/semantics3",
+      "id": "live.startup.511",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "511"
+      }
+    },
+    {
+      "aliases": [
+        "casetext"
+      ],
+      "canonical_name": "Casetext",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/casetext",
+      "id": "live.startup.542",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "542"
+      }
+    },
+    {
+      "aliases": [
+        "caremessage"
+      ],
+      "canonical_name": "CareMessage",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/caremessage",
+      "id": "live.startup.577",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "577"
+      }
+    },
+    {
+      "aliases": [
+        "cruise"
+      ],
+      "canonical_name": "Cruise",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/cruise",
+      "id": "live.startup.590",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "590"
+      }
+    },
+    {
+      "aliases": [
+        "mixerbox"
+      ],
+      "canonical_name": "MixerBox",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/mixerbox",
+      "id": "live.startup.641",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "641"
+      }
+    },
+    {
+      "aliases": [
+        "opencurriculum"
+      ],
+      "canonical_name": "OpenCurriculum",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/opencurriculum",
+      "id": "live.startup.642",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "642"
+      }
+    },
+    {
+      "aliases": [
+        "checkr"
+      ],
+      "canonical_name": "Checkr",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/checkr",
+      "id": "live.startup.662",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "662"
+      }
+    },
+    {
+      "aliases": [
+        "salessift"
+      ],
+      "canonical_name": "SalesSift",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/salessift",
+      "id": "live.startup.707",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "707"
+      }
+    },
+    {
+      "aliases": [
+        "weave-2"
+      ],
+      "canonical_name": "Weave",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/weave-2",
+      "id": "live.startup.720",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "720"
+      }
+    },
+    {
+      "aliases": [
+        "qventus"
+      ],
+      "canonical_name": "Qventus",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/qventus",
+      "id": "live.startup.740",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "740"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "20n",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/20n",
+      "id": "live.startup.747",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "747"
+      }
+    },
+    {
+      "aliases": [
+        "akido-labs"
+      ],
+      "canonical_name": "Akido Labs",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/akido-labs",
+      "id": "live.startup.748",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "748"
+      }
+    },
+    {
+      "aliases": [
+        "zeitview"
+      ],
+      "canonical_name": "Zeitview",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/zeitview",
+      "id": "live.startup.762",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "762"
+      }
+    },
+    {
+      "aliases": [
+        "paperspace"
+      ],
+      "canonical_name": "Paperspace",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/paperspace",
+      "id": "live.startup.780",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "780"
+      }
+    },
+    {
+      "aliases": [
+        "smarking"
+      ],
+      "canonical_name": "Smarking",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/smarking",
+      "id": "live.startup.788",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "788"
+      }
+    },
+    {
+      "aliases": [
+        "resolve"
+      ],
+      "canonical_name": "Resolve",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/resolve",
+      "id": "live.startup.797",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "797"
+      }
+    },
+    {
+      "aliases": [
+        "yhat"
+      ],
+      "canonical_name": "Yhat",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/yhat",
+      "id": "live.startup.799",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "799"
+      }
+    },
+    {
+      "aliases": [
+        "dabble"
+      ],
+      "canonical_name": "Dabble",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/dabble",
+      "id": "live.startup.822",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "822"
+      }
+    },
+    {
+      "aliases": [
+        "sigopt"
+      ],
+      "canonical_name": "SigOpt",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/sigopt",
+      "id": "live.startup.830",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "830"
+      }
+    },
+    {
+      "aliases": [
+        "tara-ai"
+      ],
+      "canonical_name": "Tara AI",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/tara-ai",
+      "id": "live.startup.848",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "848"
+      }
+    },
+    {
+      "aliases": [
+        "mashgin"
+      ],
+      "canonical_name": "Mashgin",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/mashgin",
+      "id": "live.startup.856",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "856"
+      }
+    },
+    {
+      "aliases": [
+        "ross-intelligence"
+      ],
+      "canonical_name": "ROSS Intelligence",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/ross-intelligence",
+      "id": "live.startup.875",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "875"
+      }
+    },
+    {
+      "aliases": [
+        "snapmagic"
+      ],
+      "canonical_name": "SnapMagic",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/snapmagic",
+      "id": "live.startup.878",
+      "metadata": {
+        "origin": "live_bulk_pilot",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "source_ids": {
+        "yc": "878"
+      }
+    }
+  ],
+  "identity_count": 30,
+  "lineage_mode": "live",
+  "pending_qualification": true,
+  "revision": "live-yc-pilot-94c97c226252d38f19fdffa7766ac73a17b4824cff1dd693b262bee563731f05",
+  "rule_version": "resolution-v1",
+  "target_count": 50
+}

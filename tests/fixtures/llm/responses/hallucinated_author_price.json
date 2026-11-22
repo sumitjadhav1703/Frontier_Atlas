@@ -1,0 +1,25 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true},
+  "fields": {
+    "productName": {
+      "value": "Acme Cloud",
+      "quote": "Acme Cloud",
+      "segment_ids": ["TITLE"]
+    },
+    "authors": {
+      "value": ["Dr. Fake Author"],
+      "quote": "Dr. Fake Author",
+      "segment_ids": ["OWNER"]
+    },
+    "price": {
+      "value": "$9999",
+      "quote": "$9999 enterprise forever",
+      "segment_ids": ["PRICING"]
+    },
+    "pricingModel": {
+      "value": "ENTERPRISE",
+      "quote": "$9999 enterprise forever",
+      "segment_ids": ["PRICING"]
+    }
+  }
+}

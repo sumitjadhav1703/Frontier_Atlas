@@ -1,0 +1,15 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "purpose": "broken_claim_replay_provider_as_live"
+  },
+  "live_success": true,
+  "status": "success",
+  "provider": "replay",
+  "model": "replay-canary",
+  "durable_identity": "product:replay-should-never-qualify",
+  "canonical_entity_id": "ent_replay",
+  "export_row_id": "product:replay-should-never-qualify",
+  "field_evidence": {"content.productName": {"quote": "replay"}}
+}

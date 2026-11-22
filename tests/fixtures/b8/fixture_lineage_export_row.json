@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "purpose": "broken_fixture_row_in_live_projection"
+  },
+  "schemaVersion": "1.0",
+  "source.name": "fixture-leak",
+  "source.url": "https://example.invalid/fixture",
+  "content.startupName": "Fixture Co",
+  "content.productName": "Fixture Product",
+  "content.pricingModel": "FREE",
+  "collectedAt": "2026-11-21T12:00:00Z",
+  "durableIdentity": "product:fixture-leak",
+  "asOf": "2026-11-21T12:00:00Z",
+  "lineageMode": "fixture",
+  "runId": "fixture-run"
+}

@@ -1,0 +1,8 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B4",
+    "description": "Offline LLM grounding fixtures; never admit to live export"
+  }
+}

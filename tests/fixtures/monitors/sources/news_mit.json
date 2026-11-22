@@ -1,0 +1,14 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "news_mit"},
+  "_synthetic": true,
+  "id": "mit-synth-1",
+  "title": "MIT synthetic AI topic fixture",
+  "url": "https://news.mit.edu/2026/synth-ai-1",
+  "article_url": "https://news.mit.edu/2026/synth-ai-1",
+  "article_publication_time": "2026-11-21T06:15:00-05:00",
+  "datePublished": "2026-11-21T06:15:00-05:00",
+  "paragraphs": [
+    "FIRST_PARA_MIT Synthetic MIT News body start.",
+    "LAST_PARA_MIT Synthetic MIT News body end."
+  ]
+}

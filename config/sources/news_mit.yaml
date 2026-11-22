@@ -1,0 +1,23 @@
+source_id: news_mit
+canonical_publisher: MIT News
+scope: news_monitor
+status: qualified
+documented_access_url: "https://news.mit.edu/topic/artificial-intelligence2"
+policy_url: "https://news.mit.edu/"
+review_date: 2026-11-21
+allowed_text_use: pending_live_policy_and_reuse_check
+original_time_field: article_publication_time
+original_timezone: America/New_York
+pagination_stop_rule: topic_index_then_detail_until_window_exhausted
+attribution: MIT News AI topic index to original article
+domain_governor: news.mit.edu
+fallback: qualify alternate publisher AI desk before swap
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_mit/discovery_20261121T190733Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: 2e612fe2772fcedb28ad90d6ceb7a2f61846f186aac38a72f20cdd5ed787a3a2
+probe_rate_limit_headers: "{}"
+probe_observed_at: "2026-11-21T19:07:33.571906+00:00"
+probe_detail_url: "http://web.mit.edu"
+probe_pilot_count: 89
+notes: Separate original article from related stories; check page time precision.

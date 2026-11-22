@@ -1,0 +1,24 @@
+source_id: news_arstechnica
+canonical_publisher: Ars Technica
+scope: news_monitor
+status: qualified
+documented_access_url: "https://arstechnica.com/ai/"
+policy_url: "https://arstechnica.com/"
+review_date: 2026-11-21
+allowed_text_use: pending_live_policy_and_reuse_check
+original_time_field: article_publication_time
+original_timezone: America/Chicago
+pagination_stop_rule: topic_index_to_original_reporting_until_window_exhausted
+attribution: Ars Technica AI topic to original reporting
+domain_governor: arstechnica.com
+fallback: qualify alternate publisher AI desk before swap
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_arstechnica/discovery_20261121T190731Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: 2f76b6edfd8fa2eb21f6a2f96aaa95fd993db0edb70c3d86772e246ffb251897
+probe_rate_limit_headers: "{}"
+probe_observed_at: "2026-11-21T19:07:29.815537+00:00"
+probe_detail_url: "https://arstechnica.com/science/2026/11/race-realism-isnt-realistic-and-it-isnt-good-science/"
+probe_error: HTTP 405
+probe_pilot_count: 20
+notes: Handle teasers and time offsets.

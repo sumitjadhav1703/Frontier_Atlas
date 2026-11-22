@@ -1,0 +1,20 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true},
+  "fields": {
+    "productName": {
+      "value": "Beta Widget",
+      "quote": "Beta Widget",
+      "segment_ids": ["TITLE"]
+    },
+    "pricingModel": {
+      "value": null,
+      "quote": null,
+      "segment_ids": []
+    },
+    "employeeCount": {
+      "value": 5000,
+      "quote": null,
+      "segment_ids": []
+    }
+  }
+}

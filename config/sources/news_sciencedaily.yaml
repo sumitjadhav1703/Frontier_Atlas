@@ -1,0 +1,23 @@
+source_id: news_sciencedaily
+canonical_publisher: ScienceDaily
+scope: news_monitor
+status: qualified
+documented_access_url: "https://www.sciencedaily.com/news/computers_math/artificial_intelligence/"
+policy_url: "https://www.sciencedaily.com/"
+review_date: 2026-11-21
+allowed_text_use: pending_live_policy_and_reuse_check
+original_time_field: article_publication_time
+original_timezone: America/New_York
+pagination_stop_rule: listing_then_story_detail_until_window_exhausted
+attribution: ScienceDaily AI news listing to story page
+domain_governor: sciencedaily.com
+fallback: qualify alternate publisher AI desk before swap
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_sciencedaily/discovery_20261121T190735Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: d4749acaacac8002038040800a1733296070872ea50647fdcc65f2d18d099d13
+probe_rate_limit_headers: "{}"
+probe_observed_at: "2026-11-21T19:07:33.986689+00:00"
+probe_detail_url: "https://www.sciencedaily.com/"
+probe_pilot_count: 269
+notes: Keep article publication time separate from study/source date.

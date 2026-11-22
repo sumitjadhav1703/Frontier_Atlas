@@ -1,0 +1,173 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "description": "Hard negatives independent of seed aliases; zero false merges required."
+  },
+  "negatives": [
+    {
+      "id": "neg.openai_vs_open_ai_robotics",
+      "left": {
+        "raw_name": "OpenAI",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "Open A.I. Robotics",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "homonym_not_in_seed_aliases"
+    },
+    {
+      "id": "neg.ai_vs_aiperiod",
+      "left": {
+        "raw_name": "AI",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "A.I.",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "acronym_punctuation_collision"
+    },
+    {
+      "id": "neg.nexus_homonyms",
+      "left": {
+        "raw_name": "Nexus",
+        "namespace": "startup",
+        "domain": "nexus-alpha.example",
+        "ownership_evidenced": true
+      },
+      "right": {
+        "raw_name": "Nexus Analytics",
+        "namespace": "startup",
+        "domain": "nexus-analytics.example",
+        "ownership_evidenced": true
+      },
+      "must_not_share_canonical": true,
+      "reason": "homonym_distinct_entities"
+    },
+    {
+      "id": "neg.shared_host",
+      "left": {
+        "raw_name": "Northwind ML",
+        "namespace": "startup",
+        "domain": "shared-host.example"
+      },
+      "right": {
+        "raw_name": "Southwind AI",
+        "namespace": "startup",
+        "domain": "shared-host.example"
+      },
+      "must_not_share_canonical": true,
+      "reason": "shared_host_insufficient"
+    },
+    {
+      "id": "neg.subsidiary_parent",
+      "left": {
+        "raw_name": "DeepMind",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "Google",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "subsidiary_not_parent_merge"
+    },
+    {
+      "id": "neg.openai_vs_openai_global",
+      "left": {
+        "raw_name": "OpenAI",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "OpenAI Global",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "related_name_not_same_entity"
+    },
+    {
+      "id": "neg.studio_owners",
+      "left": {
+        "raw_name": "Studio",
+        "namespace": "product",
+        "owner_id": "fixture.startup.openai"
+      },
+      "right": {
+        "raw_name": "Studio",
+        "namespace": "product",
+        "owner_id": "fixture.startup.huggingface"
+      },
+      "must_not_share_canonical": true,
+      "reason": "same_product_name_different_owners"
+    },
+    {
+      "id": "neg.anthropic_vs_fake",
+      "left": {
+        "raw_name": "Anthropic",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "Anthropic Labs Fake",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "holdout_not_in_aliases"
+    },
+    {
+      "id": "neg.mistral_vs_wind",
+      "left": {
+        "raw_name": "Mistral AI",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "Mistral Wind Co",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "prefix_similarity_no_merge"
+    },
+    {
+      "id": "neg.huggingface_vs_pets",
+      "left": {
+        "raw_name": "Hugging Face",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "Hugging Pets LLC",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "holdout_independent_of_seed_aliases"
+    },
+    {
+      "id": "neg.scale_vs_scaleup",
+      "left": {
+        "raw_name": "Scale AI",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "ScaleUp Robotics",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "holdout_independent_of_seed_aliases"
+    },
+    {
+      "id": "neg.ambiguous_ai_alias",
+      "left": {
+        "raw_name": "AI",
+        "namespace": "startup"
+      },
+      "right": {
+        "raw_name": "A.I. Labs",
+        "namespace": "startup"
+      },
+      "must_not_share_canonical": true,
+      "reason": "ambiguous_short_alias"
+    }
+  ]
+}

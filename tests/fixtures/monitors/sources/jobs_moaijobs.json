@@ -1,0 +1,19 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "jobs_moaijobs"},
+  "_synthetic": true,
+  "id": "moai-1",
+  "requisition_id": "moai-req-1",
+  "title": "Applied Scientist",
+  "company": "MoAI Labs",
+  "datePosted": "2026-11-21T09:00:00+00:00",
+  "original_posting_date": "2026-11-21T09:00:00+00:00",
+  "is_remote": false,
+  "role_family": "research",
+  "new_badge": true,
+  "url": "https://www.moaijobs.com/jobs/applied-scientist",
+  "employer_url": "https://moailabs.example/careers/as",
+  "paragraphs": [
+    "FIRST_JOB_MOAI New badge is discovery-only.",
+    "LAST_JOB_MOAI On-site only explicit in description."
+  ]
+}

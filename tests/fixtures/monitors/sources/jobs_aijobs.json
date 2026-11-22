@@ -1,0 +1,17 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "jobs_aijobs"},
+  "_synthetic": true,
+  "id": "aijobs-1",
+  "requisition_id": "aijobs-req-1",
+  "title": "Research Engineer",
+  "company": "Vector Forge",
+  "datePosted": "2026-11-21T08:00:00+00:00",
+  "is_remote": true,
+  "role_family": "research",
+  "url": "https://aijobs.ai/jobs/vector-forge-re",
+  "employer_url": "https://vectorforge.example/jobs/re",
+  "paragraphs": [
+    "FIRST_JOB_AIJOBS Fully remote research role.",
+    "LAST_JOB_AIJOBS Apply via employer requisition."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "jobs_inferencejobs"},
+  "_synthetic": true,
+  "id": "inf-1",
+  "requisition_id": "inf-req-1",
+  "title": "Inference Platform Engineer",
+  "company": "Token Bridge",
+  "datePosted": "2026-11-21T10:00:00+00:00",
+  "is_remote": true,
+  "role_family": "engineering",
+  "url": "https://www.inferencejobs.com/jobs/token-bridge",
+  "employer_url": "https://tokenbridge.example/jobs/ipe",
+  "paragraphs": [
+    "FIRST_JOB_INF Evidenced AI platform work.",
+    "LAST_JOB_INF Employer posting traced."
+  ]
+}

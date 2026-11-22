@@ -1,0 +1,24 @@
+source_id: bulk_github_metrics
+canonical_publisher: GitHub
+scope: bulk_repo_metrics
+status: qualified
+documented_access_url: "https://docs.github.com/en/rest/repos/repos#get-a-repository"
+policy_url: "https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api"
+review_date: 2026-11-21
+allowed_text_use: public_repository_metadata_only
+original_time_field: observed_at
+original_timezone: UTC
+pagination_stop_rule: coalesce_same_repo_lookups_honor_etag_304
+attribution: GitHub REST stargazers_count for trusted owner/repo
+domain_governor: api.github.com
+fallback: none_without_credential_or_quota
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_github_metrics/repo_metrics_20261121T190741Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: c8a017161399b158707dc61ae140a7edc2b6762bcb809e872f8eccb3f900f1a6
+probe_sample_date: "2026-11-21T19:07:41.069752+00:00"
+probe_rate_limit_headers: "{'x-ratelimit-limit': '5000', 'x-ratelimit-remaining': '4992', 'x-ratelimit-reset': '1795291485', 'x-ratelimit-used': '8', 'x-ratelimit-resource': 'core'}"
+probe_observed_at: "2026-11-21T19:07:41.069774+00:00"
+probe_error: resolved address unsafe for host api.github.com
+probe_pilot_count: 1
+notes: Track repo ID, URL, ETag and metric history; 304 only with cached representation.

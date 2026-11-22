@@ -1,0 +1,70 @@
+# Provider capability stubs for B4+. Secrets via environment / OS keychain only.
+# Model IDs are placeholders until B8 live qualification. Fake never counts as live.
+
+defaults:
+  paid_spend_cap: 0
+  network_mode: offline
+  # Model IDs stay placeholders until B8. Absent credentials disable a tier.
+
+providers:
+  fake:
+    provider: fake
+    model: fake-extract-v1
+    enabled: true
+    context_tokens: 8192
+    reserved_output_tokens: 1024
+    max_input_tokens: 6912
+    max_request_bytes: 200000
+    safety_margin_tokens: 64
+    framing_tokens: 256
+    api_key_env: null
+    billing_enabled: false
+    is_fake: true
+    # Fake never qualifies as live.
+
+  gemini:
+    provider: gemini
+    model: PLACEHOLDER_SELECT_AT_B8
+    enabled: false
+    context_tokens: 1048576
+    reserved_output_tokens: 2048
+    max_input_tokens: 1000000
+    max_request_bytes: 2000000
+    safety_margin_tokens: 256
+    framing_tokens: 512
+    api_key_env: GEMINI_API_KEY
+    billing_enabled: false
+    requests_per_day: 1500
+    tokens_per_day: 1000000
+
+  groq:
+    provider: groq
+    model: PLACEHOLDER_SELECT_AT_B8
+    enabled: false
+    context_tokens: 32768
+    reserved_output_tokens: 2048
+    max_input_tokens: 30000
+    max_request_bytes: 500000
+    safety_margin_tokens: 128
+    framing_tokens: 512
+    api_key_env: GROQ_API_KEY
+    billing_enabled: false
+    requests_per_day: 14400
+    tokens_per_day: 500000
+
+  ollama:
+    provider: ollama
+    model: PLACEHOLDER_LOCAL
+    enabled: false
+    context_tokens: 8192
+    reserved_output_tokens: 1024
+    max_input_tokens: 6912
+    max_request_bytes: 200000
+    safety_margin_tokens: 64
+    framing_tokens: 256
+    api_key_env: null
+    billing_enabled: false
+    is_local: true
+    base_url: http://127.0.0.1:11434
+    requests_per_day: 100000
+    tokens_per_day: 100000000

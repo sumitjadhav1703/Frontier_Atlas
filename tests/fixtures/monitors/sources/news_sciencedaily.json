@@ -1,0 +1,15 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "news_sciencedaily"},
+  "_synthetic": true,
+  "id": "sd-synth-1",
+  "title": "ScienceDaily synthetic AI story",
+  "url": "https://www.sciencedaily.com/releases/2026/11/synth1.htm",
+  "article_url": "https://www.sciencedaily.com/releases/2026/11/synth1.htm",
+  "article_publication_time": "2026-11-21T06:00:00-05:00",
+  "datePublished": "2026-11-21T06:00:00-05:00",
+  "study_date": "2026-09-01",
+  "paragraphs": [
+    "FIRST_PARA_SD Article publication differs from study date.",
+    "LAST_PARA_SD Story boundary closes here."
+  ]
+}

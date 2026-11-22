@@ -1,0 +1,6 @@
+{
+  "label": "synthetic",
+  "not_for_live_export": true,
+  "block": "B9",
+  "description": "Negative / mutation samples for B9 predicate checks only. Never admit to var/live, Sheets, or release_manifest as live evidence."
+}

@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B9",
+    "purpose": "Scaffold-shaped release_manifest must never satisfy readiness predicates"
+  },
+  "status": "awaiting_b8",
+  "cutoff_utc": null,
+  "cutoff_ist": null,
+  "run_id": null,
+  "repo_rev": null,
+  "workbook_id": null,
+  "tab_counts": {},
+  "source_scan_receipts": [],
+  "pdf_sha256": null,
+  "pdf_pages": null,
+  "viewer_checks": [],
+  "model_assisted_row_id": null,
+  "ready_artifacts": [
+    "README.md",
+    "architecture.pdf",
+    "src/"
+  ],
+  "submission": "not_submitted"
+}

@@ -1,0 +1,25 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true},
+  "fields": {
+    "productName": {
+      "value": "Acme Cloud",
+      "quote": "Acme Cloud",
+      "segment_ids": ["TITLE"]
+    },
+    "owner": {
+      "value": "Acme Labs Inc.",
+      "quote": "Acme Cloud is owned by Acme Labs Inc.",
+      "segment_ids": ["OWNER"]
+    },
+    "pricingModel": {
+      "value": "FREEMIUM",
+      "quote": "Acme Cloud pricing model: Freemium. Self-serve Pro plan costs $29 per month; a free tier is always available.",
+      "segment_ids": ["PRICING"]
+    },
+    "price": {
+      "value": "$29",
+      "quote": "Acme Cloud pricing model: Freemium. Self-serve Pro plan costs $29 per month",
+      "segment_ids": ["PRICING"]
+    }
+  }
+}

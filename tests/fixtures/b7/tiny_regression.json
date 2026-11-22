@@ -1,0 +1,13 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B7",
+    "purpose": "Cheap cumulative-gate regression; not a substitute for saved 1k/10k benchmark"
+  },
+  "candidate_count": 32,
+  "workers": 1,
+  "max_wall_seconds": 15,
+  "require_zero_duplicate_commits": true,
+  "require_bounded_queue": true
+}

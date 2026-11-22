@@ -1,0 +1,17 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true, "source_id": "jobs_aicommunity"},
+  "_synthetic": true,
+  "id": "aic-1",
+  "requisition_id": "aic-req-1",
+  "title": "Community AI Engineer",
+  "company": "Commons Model Co",
+  "datePosted": "2026-11-21T07:45:00+00:00",
+  "is_remote": true,
+  "role_family": "engineering",
+  "url": "https://www.aicommunityjobs.com/jobs/commons-ai",
+  "employer_url": "https://commonsmodel.example/jobs/cae",
+  "paragraphs": [
+    "FIRST_JOB_AIC Full employer description fixture.",
+    "LAST_JOB_AIC Original posting time verified."
+  ]
+}

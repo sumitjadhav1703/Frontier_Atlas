@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "not_for_live_export": true,
+    "block": "B7",
+    "purpose": "Single changed observation for selective update replay"
+  },
+  "target_logical_id": "startup:aurora-labs",
+  "unchanged_peers": [
+    "product:aurora-orbit",
+    "paper:2401.00001",
+    "job:aurora-ml-engineer",
+    "news:aurora-raises-seed"
+  ],
+  "updated_body": {
+    "schemaVersion": "1.0",
+    "recordType": "STARTUP",
+    "source": {"name": "B7 Synthetic Directory", "url": "https://fixtures.local/b7/startups/aurora-labs"},
+    "content": {"entityName": "Aurora Labs", "data": {"employeeCount": 55}},
+    "collectedAt": "2026-11-21T12:00:00Z"
+  },
+  "updated_full_text": "Aurora Labs is a synthetic AI startup fixture. Updated employee count evidence: 55. Offline B7 only.",
+  "expected_field_delta": {"content.data.employeeCount": 55}
+}

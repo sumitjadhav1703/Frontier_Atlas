@@ -1,0 +1,21 @@
+{
+  "_meta": {"label": "synthetic", "not_for_live_export": true},
+  "note": "Target entity is Nova Assist; quote/price belong to Quasar Search",
+  "fields": {
+    "productName": {
+      "value": "Nova Assist",
+      "quote": "Nova Assist",
+      "segment_ids": ["TITLE"]
+    },
+    "owner": {
+      "value": "Quasar Labs Ltd.",
+      "quote": "Quasar Search is owned by Quasar Labs Ltd.",
+      "segment_ids": ["OWNER"]
+    },
+    "pricingModel": {
+      "value": "ENTERPRISE",
+      "quote": "Quasar Search pricing: Enterprise only with custom contracts.",
+      "segment_ids": ["PRICING"]
+    }
+  }
+}

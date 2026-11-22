@@ -1,0 +1,23 @@
+source_id: news_guardian
+canonical_publisher: The Guardian
+scope: news_monitor
+status: qualified
+documented_access_url: "https://www.theguardian.com/technology/artificialintelligenceai"
+policy_url: "https://www.theguardian.com/info/complaints-and-corrections"
+review_date: 2026-11-21
+allowed_text_use: pending_live_policy_and_reuse_check
+original_time_field: original_timestamp
+original_timezone: Europe/London
+pagination_stop_rule: section_index_then_article_exclude_liveblogs
+attribution: Guardian AI technology section to original article
+domain_governor: theguardian.com
+fallback: qualify alternate publisher AI desk before swap
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_guardian/discovery_20261121T190732Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: b2db6d1ed069e8ced0e67ce0815ac1b94ced1f6f1f6490fc23bde03740acc72f
+probe_rate_limit_headers: "{}"
+probe_observed_at: "2026-11-21T19:07:31.788966+00:00"
+probe_detail_url: "https://support.theguardian.com/subscribe/weekly?REFPVID=undefined&amp;INTCMP=undefined&amp;acquisitionData=%7B%22source%22%3A%22GUARDIAN_WEB%22%2C%22componentId%22%3A%22PrintSubscriptionsHeaderLink%22%2C%22componentType%22%3A%22ACQUISITIONS_HEADER%22%2C%22referrerUrl%22%3A%22%22%7D"
+probe_pilot_count: 128
+notes: Parse original timestamp and body; check allowed access and reuse.

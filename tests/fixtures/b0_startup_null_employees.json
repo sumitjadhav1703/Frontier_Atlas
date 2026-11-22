@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B0 optional employeeCount null round-trip",
+    "not_for_live_export": true
+  },
+  "record": {
+    "schemaVersion": "1.0",
+    "recordType": "STARTUP",
+    "source": {
+      "name": "Synthetic Startup Directory",
+      "url": "https://fixtures.local/startups/null-count-co"
+    },
+    "content": {
+      "entityName": "Null Count Co",
+      "data": {
+        "employeeCount": null
+      }
+    },
+    "collectedAt": "2026-11-21T12:00:00Z"
+  }
+}

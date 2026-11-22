@@ -1,0 +1,23 @@
+source_id: jobs_aiworkportal
+canonical_publisher: AI Work Portal
+scope: jobs_monitor
+status: qualified
+documented_access_url: "https://aijobportal.com/"
+policy_url: "https://aijobportal.com/"
+review_date: 2026-11-21
+allowed_text_use: pending_live_policy_and_reuse_check
+original_time_field: original_posting_date
+original_timezone: UTC
+pagination_stop_rule: curated_link_to_employer_posting_dedupe_syndicated
+attribution: AI Work Portal curated link joined to employer posting
+domain_governor: aijobportal.com
+fallback: alternate independent AI/ML job directory after documented reason
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/jobs_aiworkportal/discovery_20261121T190723Z.json
+probe_fetch_status: ok
+probe_schema_fingerprint: 7d97d8a9ec6ccaf4e2283a22c7d581febfd35815cdcef728b671cc50c3db2987
+probe_rate_limit_headers: "{}"
+probe_observed_at: "2026-11-21T19:07:22.978799+00:00"
+probe_detail_url: "https://aijobportal.com/"
+probe_pilot_count: 24
+notes: Deduplicate syndicated URLs; reject ambiguous dates.
