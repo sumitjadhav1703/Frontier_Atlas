@@ -566,7 +566,11 @@ def build_chain(
                 api_base=block.get("base_url"),
                 # Local CPU inference is slow; hosted tiers answer well within 30s.
                 timeout_s=120.0 if block.get("is_local") else 30.0,
-                extra={"num_ctx": int(block["context_tokens"])} if block.get("is_local") else {},
+                extra={
+                    **({"num_ctx": int(block["context_tokens"])} if block.get("is_local") else {}),
+                    # Optional litellm params from providers.yaml, e.g. reasoning_effort.
+                    **(block.get("litellm_params") or {}),
+                },
             )
         )
     return LiteLLMChain(tiers, ledger, router=router, env=env)

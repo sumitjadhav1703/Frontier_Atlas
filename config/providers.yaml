@@ -24,9 +24,13 @@ providers:
 
   gemini:
     provider: gemini
+    # B8 2026-11-22: model listed live via /v1beta/models; free tier, no billing.
     litellm_model: gemini/gemini-2.5-flash
-    model: PLACEHOLDER_SELECT_AT_B8
-    enabled: false
+    model: gemini-2.5-flash
+    enabled: true
+    # Thinking tokens count against max_tokens and truncated the JSON in the live smoke.
+    litellm_params:
+      reasoning_effort: disable
     context_tokens: 1048576
     reserved_output_tokens: 2048
     max_input_tokens: 1000000
@@ -35,24 +39,28 @@ providers:
     framing_tokens: 512
     api_key_env: GEMINI_API_KEY
     billing_enabled: false
-    requests_per_day: 1500
+    # Conservative free-tier daily caps (local ledger stops before the provider does).
+    requests_per_day: 200
     tokens_per_day: 1000000
 
   groq:
     provider: groq
-    litellm_model: groq/llama-3.3-70b-versatile
-    model: PLACEHOLDER_SELECT_AT_B8
-    enabled: false
-    context_tokens: 32768
-    reserved_output_tokens: 2048
-    max_input_tokens: 30000
-    max_request_bytes: 500000
+    # B8 2026-11-22: llama-3.3-70b-versatile is no longer served; gpt-oss-120b listed live.
+    # Free tier measured: 8000 tokens/minute, 1000 requests/day. A request above the
+    # per-minute token limit is a real 413, so input is capped well below 8000.
+    litellm_model: groq/openai/gpt-oss-120b
+    model: openai/gpt-oss-120b
+    enabled: true
+    context_tokens: 131072
+    reserved_output_tokens: 1024
+    max_input_tokens: 5500
+    max_request_bytes: 120000
     safety_margin_tokens: 128
     framing_tokens: 512
     api_key_env: GROQ_API_KEY
     billing_enabled: false
-    requests_per_day: 14400
-    tokens_per_day: 500000
+    requests_per_day: 900
+    tokens_per_day: 200000
 
   ollama:
     provider: ollama

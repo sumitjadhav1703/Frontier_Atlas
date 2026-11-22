@@ -25,7 +25,7 @@ from signal_ingest.llm.quota import QuotaLedger  # noqa: E402
 
 MODELS = {
     "gemini": "gemini/gemini-2.5-flash",
-    "groq": "groq/llama-3.3-70b-versatile",
+    "groq": "groq/openai/gpt-oss-120b",  # B8: llama-3.3 retired on Groq
     "ollama": "ollama_chat/llama3.2:3b",
 }
 KEY_ENV = {"gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY", "ollama": None}
