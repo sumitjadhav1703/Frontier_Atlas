@@ -1454,3 +1454,22 @@ def test_b9_extra_job_feed_routes_through_monitor_pipeline():
 
     src = inspect.getsource(worker.process_claimed_task)
     assert "get_adapter(task.source_id) is not None" in src
+
+
+def test_b9_ashby_llm_remote_only_fills_missing_flag():
+    """A grounded LLM is_remote is used only when the posting has no source remote flag."""
+    from signal_ingest.adapters.monitors import jobs_ashby_ai as A
+
+    listing = {"url": "https://api.ashbyhq.com/posting-api/job-board/acme"}
+    base = {"title": "Research Engineer", "publishedAt": "2026-11-21T10:00:00+00:00", "org": "acme",
+            "company": "Acme AI", "descriptionPlain": "This role is fully remote across the US.",
+            "_listing": listing}
+    llm = {"value": True, "quote": "This role is fully remote", "segment_ids": ["seg:0003:body"],
+           "provider": "gemini", "model": "gemini/gemini-2.5-flash"}
+    filled = A.parse_detail(_ashby_raw({**base, "id": "9", "workplaceType": None, "isRemote": None}), llm_remote=llm)
+    assert filled.ok and filled.payload["content"]["is_remote"] is True
+    assert filled.evidence["is_remote"]["basis"] == "llm" and filled.evidence["is_remote"]["quote"] == llm["quote"]
+    source_wins = A.parse_detail(_ashby_raw({**base, "id": "10", "workplaceType": "OnSite"}),
+                                 llm_remote=llm)
+    assert source_wins.payload["content"]["is_remote"] is False  # source flag beats the model
+    assert A.parse_detail(_ashby_raw({**base, "id": "11"})).quarantine_reason == "remote_unspecified"

@@ -1441,3 +1441,27 @@ def test_b8_paper_date_consistent_with_arxiv_v1_month(value, url, expected):
     from signal_ingest.export.project import arxiv_consistent_date
 
     assert arxiv_consistent_date(value, url) == expected
+
+
+def test_b9_export_record_type_canonical_names_and_role_labels():
+    """Brief schemas: recordType on every entity tab, canonical startup/company names from
+    resolution matches (raw kept), role_family labels like "Engineering"."""
+    from datetime import datetime, timezone
+
+    from signal_ingest.export.project import _candidate_to_flat, display_role_family
+    from signal_ingest.export.tabs import TAB_HEADERS, TAB_ENTITY_MAPPING_LOG
+
+    for tab, headers in TAB_HEADERS.items():
+        if tab != TAB_ENTITY_MAPPING_LOG:
+            assert headers[:2] == ("schemaVersion", "recordType"), tab
+    assert display_role_family("ml_engineering") == "ML Engineering"
+    assert display_role_family("customer_success") == "Customer Success"
+    cand = {"status": "accepted", "record_type": "PRODUCT", "external_id": "chatgpt",
+            "payload": {"schemaVersion": "1.0", "content": {"startupName": "OpenAI, Inc.", "pricingModel": "FREEMIUM"}}}
+    flat = _candidate_to_flat(cand, as_of=datetime(2026, 11, 23, tzinfo=timezone.utc), lineage_mode="fixture",
+                              run_id="r", canonical_names={"OpenAI, Inc.": "OpenAI"})
+    assert flat["recordType"] == "PRODUCT"
+    assert flat["content.startupName"] == "OpenAI" and flat["content.startupNameRaw"] == "OpenAI, Inc."
+    unmatched = _candidate_to_flat(cand, as_of=datetime(2026, 11, 23, tzinfo=timezone.utc), lineage_mode="fixture",
+                                   run_id="r", canonical_names={})
+    assert unmatched["content.startupName"] == "OpenAI, Inc."  # no match: source string kept

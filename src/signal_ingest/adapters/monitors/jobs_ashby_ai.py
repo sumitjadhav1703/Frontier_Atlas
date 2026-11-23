@@ -127,7 +127,15 @@ def _quarantine(reason: str, external_id: str | None, **detail: Any) -> MonitorP
     )
 
 
-def parse_detail(raw: RawObservation, *, cutoff: datetime | None = None, **_: Any) -> MonitorParseResult:
+def parse_detail(
+    raw: RawObservation,
+    *,
+    cutoff: datetime | None = None,
+    llm_remote: dict[str, Any] | None = None,
+    **_: Any,
+) -> MonitorParseResult:
+    """llm_remote: an ACCEPTED, quote-grounded is_remote from extract(), used only when the
+    posting carries no source flag ({value, quote, segment_ids, provider, model})."""
     try:
         body = json.loads((raw.body or b"{}").decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError):
@@ -155,6 +163,8 @@ def parse_detail(raw: RawObservation, *, cutoff: datetime | None = None, **_: An
     if not text:
         return _quarantine("incomplete_body", external_id)
     is_remote, remote_basis = remote_flag(row)
+    if is_remote is None and llm_remote and isinstance(llm_remote.get("value"), bool):
+        is_remote, remote_basis = llm_remote["value"], "llm"
     if is_remote is None:
         return _quarantine("remote_unspecified", external_id, workplaceType=row.get("workplaceType"))
     family, family_basis = role_family(title, row.get("department"), row.get("team"))
@@ -184,7 +194,8 @@ def parse_detail(raw: RawObservation, *, cutoff: datetime | None = None, **_: An
         "publication": publication,
         "date_extraction_method": "ashby_publishedAt",
         "date_precision": "instant",
-        "is_remote": {"value": is_remote, "basis": remote_basis, "workplaceType": row.get("workplaceType"), "isRemote": row.get("isRemote")},
+        "is_remote": {"value": is_remote, "basis": remote_basis, "workplaceType": row.get("workplaceType"), "isRemote": row.get("isRemote"),
+                      **({"method": "llm", **{k: llm_remote.get(k) for k in ("quote", "segment_ids", "provider", "model")}} if remote_basis == "llm" and llm_remote else {})},
         "role_family": {"value": family, "basis": family_basis, "rule_version": ROLE_RULE_VERSION},
         "body": {
             "start_excerpt": text[:240], "end_excerpt": text[-240:], "complete": True,

@@ -331,6 +331,22 @@ def owner_llm_cmd(
     typer.echo(json.dumps({k: v for k, v in result.items() if k != "outcomes"}, indent=2, default=str))
 
 
+@app.command("job-llm")
+def job_llm_cmd(
+    ctx: typer.Context,
+    run_id: str = typer.Option(..., "--run"),
+    limit: int = typer.Option(60, "--limit", min=1, help="Max provider-backed extracts"),
+) -> None:
+    """B9: grounded LLM is_remote for fresh job postings with no source remote flag."""
+    import asyncio
+
+    from signal_ingest.live.orchestrate import run_job_remote_llm
+    from signal_ingest.live.settings import load_live_settings
+
+    result = asyncio.run(run_job_remote_llm(load_live_settings(), run_id=run_id, limit=limit))
+    typer.echo(json.dumps(result, indent=2, default=str))
+
+
 @app.command("b8-status")
 def b8_status_cmd(ctx: typer.Context) -> None:
     """B8: recompute counts from the newest live export; rewrite acquisition + blocker."""

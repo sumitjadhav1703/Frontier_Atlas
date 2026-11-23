@@ -20,7 +20,8 @@ LIVE_SEEDS_PATH = DEFAULT_FIXTURE_SEEDS_PATH.parent / "seeds.live.json"
 
 
 def run_mentions(conn: psycopg.Connection, run_id: UUID | str, *, mode: str) -> list[ResolveCandidate]:
-    """Startup names (STARTUP entityName) and product owner names (PRODUCT startupName).
+    """Startup names (STARTUP entityName), product owner names (PRODUCT startupName) and
+    job employers (JOB company).
 
     YC startups and OpenRouter owners carry a trusted source id; other owners (AgiPicks) use the name path.
     """
@@ -28,19 +29,21 @@ def run_mentions(conn: psycopg.Connection, run_id: UUID | str, *, mode: str) -> 
         """
         SELECT record_type, source_id, external_id, semantic_key,
                payload->'content'->>'entityName',
-               payload->'content'->>'startupName',
+               COALESCE(payload->'content'->>'startupName', payload->'content'->>'company'),
                COALESCE(payload->'content'->>'ownerEvidenceUrl', payload->'source'->>'url'),
                payload->'meta'->>'yc_id',
                NULLIF(split_part(payload->'meta'->>'product_id', '/', 1), '')
         FROM candidates
-        WHERE run_id = %s AND status = 'accepted' AND record_type IN ('STARTUP', 'PRODUCT')
+        WHERE run_id = %s AND status = 'accepted' AND record_type IN ('STARTUP', 'PRODUCT', 'JOB')
         ORDER BY record_type, semantic_key
         """,
         (str(run_id),),
     ).fetchall()
     out: list[ResolveCandidate] = []
     for record_type, source_id, external_id, semantic_key, entity, owner, url, yc_id, owner_key in rows:
-        raw, field = (entity, "entityName") if record_type == "STARTUP" else (owner, "startupName")
+        raw, field = (entity, "entityName") if record_type == "STARTUP" else (
+            (owner, "company") if record_type == "JOB" else (owner, "startupName")
+        )
         if not (raw or "").strip():
             continue
         is_yc = record_type == "STARTUP" and str(source_id).endswith(".yc")

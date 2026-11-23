@@ -9,11 +9,11 @@ A resumable ingestion pipeline for AI startups, products, research papers, jobs 
 | Startups | 1,906 | yc-oss `tags/ai.json` (YC company directory mirror) |
 | Products | 1,195 | AgiPicks open dataset (CC BY 4.0): pricing from its attributed field, owner from the vendor's own homepage. OpenRouter public model directory: owner and pricing from the listing |
 | Research Papers | 1,656 | pwc-archive paper→code links (official repos only), OpenAlex metadata (CC0), GitHub REST stars |
-| Jobs | 4 | 24 h fresh at cutoff 2026-11-23T08:00:18Z. Exact `publishedAt` and source-backed remote flag from the Ashby feed (25 AI-company boards); 5 AI job boards monitored |
-| News | 14 | 24 h fresh at the same cutoff: Guardian 11, TechCrunch 3, MIT News 1, ScienceDaily 1 (Ars Technica detail blocked by WAF) |
-| Entity Mapping Log | 3,101 | raw name → canonical ID, method, decision, embedding suggestions |
+| Jobs | 8 | 24 h fresh at cutoff 2026-11-23T08:17:39Z. Exact `publishedAt` from the Ashby feed (25 AI-company boards). Remote flag is source-backed (4 rows) or LLM-extracted and quote-grounded (4 rows); 5 AI job boards monitored |
+| News | 15 | 24 h fresh at the same cutoff, full article text: Guardian, TechCrunch, MIT News, ScienceDaily (Ars Technica detail blocked by WAF) |
+| Entity Mapping Log | 3,109 | raw name → canonical ID, method, decision, embedding suggestions. Products and Jobs export the canonical name (raw string kept in `…Raw`) |
 
-Offline gates B0–B8 pass: 379 cumulative cases under `TZ=UTC` and `TZ=Asia/Kolkata`. Entity resolution on the gate set scores precision 1.0 / recall 1.0 (FP 0).
+Offline gates B0–B8 pass: 381 cumulative cases under `TZ=UTC` and `TZ=Asia/Kolkata`. Entity resolution on the gate set scores precision 1.0 / recall 1.0 (FP 0).
 
 ## Architecture
 
@@ -82,7 +82,8 @@ signal-ingest crawl --source bulk.yc                        # creates RUN
 signal-ingest crawl --source bulk.openrouter --run "$RUN"   # also bulk.products, bulk.papers
 signal-ingest crawl-monitors --run "$RUN"                   # 10 news/job monitors
 signal-ingest work --stage any --run "$RUN" --concurrency 8 --drain
-signal-ingest owner-llm --run "$RUN" --limit 40             # grounded LLM owner fallback
+signal-ingest owner-llm --run "$RUN" --limit 40             # grounded LLM owner fallback (products)
+signal-ingest job-llm --run "$RUN"                          # grounded LLM is_remote for fresh jobs with no source flag
 signal-ingest resolve --run "$RUN" --embed                  # entity resolution + suggestions
 signal-ingest export --run "$RUN" --as-of "$(date -u +%FT%TZ)"
 signal-ingest export-xlsx --snapshot var/live/exports/$RUN/<snapshot>
@@ -100,7 +101,19 @@ SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pyt
 
 Each block has a review in `notes/reviews/Bn.md`, and every attempt is logged in `notes/progress.md`, including failures and deviations.
 
-## Phase V · challenged monitor case (`news_arstechnica`)
+## Phase V · anti-bot and JavaScript-heavy sources
+
+The goal is to keep collecting from high-value sources without triggering captchas, and without defeating protections a site has chosen to deploy.
+
+1. **Structured endpoints first.** Every class in this run comes from a published feed or API: yc-oss JSON, AgiPicks open data, OpenRouter `/api/v1/models`, pwc-archive + OpenAlex, RSS, and the Ashby posting API. These are cheaper, stable, licensed, and never challenged. HTML scraping is the fallback, not the default.
+2. **Look like one polite client.** One stable User-Agent and session per origin, and per-origin concurrency 2 with a minimum interval (`crawl/pool.py`). Retry-After is honored, robots.txt is fetched once per origin and obeyed, and a robots 5xx schedules a retry instead of crawling blind. Decoded bodies are size-capped (gzip-bomb safe). Bursts and rotating fingerprints are what trigger Cloudflare/Datadome scoring.
+3. **Detect challenges, never solve them.** `crawl/policy.looks_like_challenge` flags interstitials served as HTTP 200 by their markers (Cloudflare "Just a moment" / challenge-platform, DataDome `captcha-delivery`, reCAPTCHA, hCaptcha, DDoS-Guard), and 401/403 responses are classified `blocked`. A challenged URL is recorded as `blocked` with backoff, and the source falls back to its feed or an approved alternate source. There are no captcha solvers and no residential-proxy rotation.
+4. **JavaScript-rendered pages.** For sites that render content client-side and permit automated access, the plan is an async headless browser (Playwright async) behind the same queue, robots, pacing and challenge checks. Lease-limited render slots, network-idle waits and the rendered HTML stored like any other observation keep the cost bounded. In this run no JS-only source was both permitted and needed. The client-rendered AI-community job board is documented as a gap, and the Ashby feed covers jobs.
+5. **Account for every block.** Each source YAML keeps its observed status and probe evidence, and every blocked or partial source is listed with what it cost.
+
+Observed case, `news_arstechnica`:
+
+
 
 | Field | Observed |
 | --- | --- |

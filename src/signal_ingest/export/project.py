@@ -21,6 +21,7 @@ from signal_ingest.export.tabs import (
     TAB_NAMES,
     TAB_NEWS,
     TAB_JOBS,
+    TAB_PRODUCTS,
     TAB_RESEARCH_PAPERS,
 )
 from signal_ingest.freshness.interval import PublicationInterval
@@ -82,6 +83,28 @@ def _payload_as_dict(payload: Any) -> dict[str, Any]:
 _ARXIV_NEW_ID = re.compile(r"arxiv\.org/(?:abs|pdf)/(\d{2})(\d{2})\.\d{4,5}", re.IGNORECASE)
 
 
+_ROLE_ACRONYMS = {"ml": "ML", "ai": "AI", "ux": "UX", "ui": "UI", "it": "IT", "hr": "HR", "qa": "QA"}
+
+
+def display_role_family(value: Any) -> str:
+    """Brief-style label ("Engineering", "ML Engineering") from a rule key ("ml_engineering")."""
+    words = re.split(r"[_\s]+", str(value).strip())
+    return " ".join(_ROLE_ACRONYMS.get(w.lower(), w.capitalize()) for w in words if w)
+
+
+def _canonical_name_map(conn: psycopg.Connection, run_id: Any) -> dict[str, str]:
+    """raw name -> canonical name for unambiguous resolution matches in this run."""
+    rows = conn.execute(
+        "SELECT raw_name, canonical_name FROM resolution_events "
+        "WHERE run_id = %s AND decision = 'match' AND canonical_name IS NOT NULL",
+        (str(run_id),),
+    ).fetchall()
+    seen: dict[str, set[str]] = {}
+    for raw, canon in rows:
+        seen.setdefault(str(raw), set()).add(str(canon))
+    return {raw: next(iter(c)) for raw, c in seen.items() if len(c) == 1}
+
+
 def arxiv_consistent_date(value: Any, paper_url: Any) -> Any:
     """Keep the metadata date only if it falls in the arXiv v1 month encoded in the ID.
 
@@ -102,6 +125,7 @@ def _candidate_to_flat(
     as_of: datetime,
     lineage_mode: str,
     run_id: str,
+    canonical_names: dict[str, str] | None = None,
 ) -> dict[str, Any] | None:
     if candidate.get("status") != "accepted":
         return None
@@ -185,6 +209,16 @@ def _candidate_to_flat(
                 return None
         except (TypeError, ValueError):
             return None
+    flat["recordType"] = record_type
+    # Brief: startupName / company are canonical names. Use this run's deterministic
+    # resolution match when there is one; keep the source-evidenced string alongside.
+    name_key = {TAB_PRODUCTS: "content.startupName", TAB_JOBS: "content.company"}.get(tab)
+    if name_key and flat.get(name_key):
+        raw_name = str(flat[name_key])
+        flat[name_key + "Raw"] = raw_name
+        flat[name_key] = (canonical_names or {}).get(raw_name, raw_name)
+    if tab == TAB_JOBS and flat.get("content.role_family"):
+        flat["content.role_family"] = display_role_family(flat["content.role_family"])
     flat["durableIdentity"] = _durable_id(candidate)
     flat["asOf"] = as_of.isoformat().replace("+00:00", "Z")
     flat["lineageMode"] = lineage_mode
@@ -288,12 +322,14 @@ def build_export_snapshot(
 
     # Prefer run-scoped; if empty, still allow records table fallback for B0 fixtures.
     flats: list[dict[str, Any]] = []
+    canonical_names = _canonical_name_map(conn, rid)
     for cand in candidates:
         flat = _candidate_to_flat(
             cand,
             as_of=cutoff,
             lineage_mode=lineage,
             run_id=str(rid),
+            canonical_names=canonical_names,
         )
         if flat is not None:
             flats.append(flat)
@@ -315,6 +351,7 @@ def build_export_snapshot(
                 tab = RECORD_TYPE_TO_TAB.get(str(row["record_type"]))
                 if tab is None:
                     continue
+                flat["recordType"] = str(row["record_type"])
                 flat["durableIdentity"] = str(row["id"])
                 flat["asOf"] = cutoff.isoformat().replace("+00:00", "Z")
                 flat["lineageMode"] = str(row["lineage_mode"])

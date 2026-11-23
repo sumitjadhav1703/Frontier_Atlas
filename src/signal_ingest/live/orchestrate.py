@@ -311,3 +311,80 @@ async def run_owner_llm_fallback(
     path = write_qualification_manifest(settings, name="owner_llm", payload=summary)
     summary["manifest_path"] = str(path)
     return summary
+
+
+async def run_job_remote_llm(settings: Any, *, run_id: str, limit: int = 60, max_age_hours: float = 24.0) -> dict[str, Any]:
+    """Grounded LLM is_remote for fresh Ashby postings that carry no source remote flag.
+
+    The posting text is the employer's own page, so extract() runs without a target entity;
+    the quote must still sit in the posting and contain remote/on-site wording (validator).
+    Only ACCEPTED evidence turns a remote_unspecified posting into a JOB row.
+    """
+    import json as _json
+    from datetime import datetime, timedelta, timezone
+
+    from signal_ingest.adapters.bulk.persist import upsert_candidate
+    from signal_ingest.adapters.monitors import jobs_ashby_ai as ashby
+    from signal_ingest.crawl.types import FetchOutcomeKind, RawObservation
+    from signal_ingest.llm import ExtractCandidate, extract
+    from signal_ingest.llm.providers_config import build_chain
+    from signal_ingest.storage.db import connect
+
+    load_env_keys()
+    now = datetime.now(timezone.utc)
+    chain = build_chain()
+    outcomes: list[dict[str, Any]] = []
+    with connect(settings) as conn:
+        rows = conn.execute(
+            "SELECT id, external_id, payload FROM tasks WHERE run_id = %s AND source_id = %s "
+            "AND stage = 'parse' AND last_error = 'remote_unspecified' ORDER BY external_id",
+            (str(run_id), ashby.SOURCE_ID),
+        ).fetchall()
+        fresh = []
+        for task_id, external_id, payload in rows:
+            row = (payload or {}).get("row") or {}
+            try:
+                published = datetime.fromisoformat(str(row.get("publishedAt")).replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if timedelta(0) <= now - published <= timedelta(hours=max_age_hours) and row.get("descriptionPlain"):
+                fresh.append((task_id, external_id, row))
+        for task_id, external_id, row in fresh[:limit]:
+            text = f"{row.get('title') or ''}\nLocation: {row.get('location') or ''}\n\n{row.get('descriptionPlain')}"
+            result = await extract(
+                ExtractCandidate(candidate_id=str(external_id), record_type="JOB", text=text,
+                                 fields_requested=("is_remote",), source_url=row.get("jobUrl")),
+                chain,
+            )
+            ev = result.fields.get("is_remote")
+            attempts = [a.__dict__ for a in getattr(chain, "last_attempts", [])]
+            provider = next((a["tier"] for a in reversed(attempts) if a.get("status") == "ok"), None)
+            accepted = ev is not None and ev.decision.value == "accepted" and isinstance(ev.value, bool)
+            outcome = {"external_id": external_id, "status": result.status.value, "accepted": accepted,
+                       "value": ev.value if ev else None, "reason": ev.reason if ev else result.reason,
+                       "provider": provider}
+            if accepted:
+                listing = row.get("_listing") or {}
+                raw = RawObservation(
+                    request_url=str(listing.get("url") or ""), final_url=str(listing.get("url") or ""),
+                    status_code=200, outcome=FetchOutcomeKind.OK, body=_json.dumps({"row": row}).encode("utf-8"),
+                    content_type="application/json", fetched_at=now,
+                )
+                model = next((t.litellm_model for t in chain.tiers if t.name == provider), None)
+                parsed = ashby.parse_detail(raw, cutoff=now, llm_remote={
+                    "value": ev.value, "quote": ev.quote, "segment_ids": list(ev.segment_ids),
+                    "provider": provider, "model": model})
+                if parsed.ok:
+                    upsert_candidate(
+                        conn, source_id=ashby.SOURCE_ID, record_type="JOB", external_id=parsed.external_id,
+                        payload=parsed.payload, evidence=parsed.evidence,
+                        status="accepted" if parsed.eligible else "pending", run_id=run_id, observation_id=None,
+                    )
+                    conn.commit()
+                    outcome["job_status"] = "accepted" if parsed.eligible else "pending"
+            outcomes.append(outcome)
+    return {
+        "track": "job_remote_llm", "run_id": str(run_id), "fresh_unspecified": len(fresh),
+        "provider_calls": len(outcomes), "accepted": sum(1 for o in outcomes if o["accepted"]),
+        "outcomes": outcomes,
+    }

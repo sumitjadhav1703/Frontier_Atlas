@@ -33,6 +33,7 @@ RECORD_TYPE_TO_TAB: Final[dict[str, str]] = {
 TAB_HEADERS: Final[dict[str, tuple[str, ...]]] = {
     TAB_STARTUPS: (
         "schemaVersion",
+        "recordType",
         "source.name",
         "source.url",
         "content.entityName",
@@ -45,9 +46,11 @@ TAB_HEADERS: Final[dict[str, tuple[str, ...]]] = {
     ),
     TAB_PRODUCTS: (
         "schemaVersion",
+        "recordType",
         "source.name",
         "source.url",
         "content.startupName",
+        "content.startupNameRaw",
         "content.productName",
         "content.pricingModel",
         "content.productUrl",
@@ -61,6 +64,7 @@ TAB_HEADERS: Final[dict[str, tuple[str, ...]]] = {
     ),
     TAB_RESEARCH_PAPERS: (
         "schemaVersion",
+        "recordType",
         "source.name",
         "source.url",
         "content.title",
@@ -79,9 +83,11 @@ TAB_HEADERS: Final[dict[str, tuple[str, ...]]] = {
     ),
     TAB_JOBS: (
         "schemaVersion",
+        "recordType",
         "source.name",
         "source.url",
         "content.company",
+        "content.companyRaw",
         "content.title",
         "content.date",
         "content.is_remote",
@@ -98,6 +104,7 @@ TAB_HEADERS: Final[dict[str, tuple[str, ...]]] = {
     ),
     TAB_NEWS: (
         "schemaVersion",
+        "recordType",
         "source.name",
         "source.url",
         "content.title",
