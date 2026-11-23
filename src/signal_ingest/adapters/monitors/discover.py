@@ -167,7 +167,8 @@ def _discover_from_feed(
             try:
                 # feedparser struct_time is UTC; mktime would read it as machine-local.
                 ts = calendar.timegm(entry.published_parsed)
-                fields["datePublished"] = datetime.fromtimestamp(ts, tz=timezone.utc)
+                # ISO string: task payloads are JSON; the freshness parser reads it as an exact instant.
+                fields["datePublished"] = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
             except (OverflowError, ValueError, TypeError, OSError):
                 pass
         rows.append(

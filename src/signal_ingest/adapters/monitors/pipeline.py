@@ -188,7 +188,7 @@ async def process_monitor_task(
     cutoff: datetime | None = None,
 ) -> dict[str, Any]:
     if task.stage == STAGE_PARSE:
-        return process_parse_stage(conn, task, cutoff=cutoff)
+        return process_parse_stage(conn, task, cutoff=cutoff, raw_store=raw_store, settings=settings)
     return await process_fetch_stage(
         conn,
         task,
@@ -299,6 +299,8 @@ def process_parse_stage(
     task: ClaimedTask,
     *,
     cutoff: datetime | None = None,
+    raw_store: RawStore | None = None,
+    settings: Settings | None = None,
 ) -> dict[str, Any]:
     parent_id = task.parent_task_id
     fetch_task_id = task.payload.get("fetch_task_id")
@@ -313,7 +315,10 @@ def process_parse_stage(
         _fail_task(conn, task, "missing_observation")
         return {"ok": False, "stage": STAGE_PARSE, "reason": "missing_observation"}
 
-    raw = _raw_from_observation_row(conn, obs_row, task=task)
+    # The caller's store/settings, not the cached global ones (same fix as the bulk path).
+    raw = _raw_from_observation_row(
+        conn, obs_row, task=task, store=raw_store or RawStore.from_settings(settings or get_settings())
+    )
     result = dispatch_parse(task.source_id, raw, task.payload, cutoff=cutoff)
 
     with conn.transaction():
@@ -480,12 +485,12 @@ def _raw_from_observation_row(
     obs_row: dict[str, Any],
     *,
     task: ClaimedTask,
+    store: RawStore,
 ) -> RawObservation:
     body = None
     content_key = obs_row.get("content_key")
     content_sha = obs_row.get("content_sha256")
     if content_key or content_sha:
-        store = RawStore.from_settings(get_settings())
         try:
             if content_sha and store.exists(content_sha):
                 body = store.read(content_sha)

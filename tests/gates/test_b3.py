@@ -896,7 +896,8 @@ def test_r3_feed_published_parsed_is_utc_not_local(ist_process_tz, frozen_clock)
     )
     assert len(scan.items) == 1
     expected = datetime(2026, 11, 21, 10, 0, tzinfo=timezone.utc)
-    assert scan.items[0].metadata["list_fields"]["datePublished"] == expected
+    # Stored as an ISO-8601 UTC string (task payloads are JSON), same instant.
+    assert scan.items[0].metadata["list_fields"]["datePublished"] == expected.isoformat()
     assert scan.items[0].metadata["publication"]["lower"] == expected.isoformat()
 
 
@@ -1277,7 +1278,8 @@ async def test_b9_work_routes_monitor_task_fetch_then_parse_to_news(monitor_env,
             run_id = create_run(conn, settings=monitor_env)
             # No `row`/`body` in the payload, so the fixture shortcut cannot synthesize a body.
             enqueue_task(
-                conn, source_id="news_mit", url=article, stage="fetch", external_id="b9-full",
+                # Unique per run: semantic keys are global and the fixture DB persists across runs.
+                conn, source_id="news_mit", url=article, stage="fetch", external_id=f"b9-full-{run_id}",
                 run_id=run_id,
                 payload={"cutoff": T.isoformat(), "title": "Synthetic full article",
                          "expected_start": "FIRST_PARA_SYNTHETIC_START",
@@ -1285,7 +1287,7 @@ async def test_b9_work_routes_monitor_task_fetch_then_parse_to_news(monitor_env,
             )
             conn.commit()
             for _ in ("fetch", "parse"):
-                for task in claim_tasks(conn, worker_id="b9-work", source_id="news_mit", limit=5):
+                for task in claim_tasks(conn, worker_id="b9-work", source_id="news_mit", run_id=run_id, limit=5):
                     stages.append(task.stage)
                     out = await process_claimed_task(conn, task, pool=pool, settings=monitor_env)
                     assert out["ok"] is True, out
