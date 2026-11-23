@@ -2,7 +2,7 @@
 
 **A resumable, horizontally scalable ingestion pipeline for the AI ecosystem: startups, products, research papers, jobs and news.** It has a grounded multi-tier LLM extractor (LangGraph + LiteLLM) and deterministic entity resolution. Every exported row traces back to the source URL it was fetched from.
 
-![python](https://img.shields.io/badge/python-3.13-blue) ![postgres](https://img.shields.io/badge/PostgreSQL-16%20%2B%20pgvector-336791) ![tests](https://img.shields.io/badge/tests-395%20passing-brightgreen) ![llm](https://img.shields.io/badge/LLM-Gemini%20%E2%86%92%20Groq%20%E2%86%92%20Meta-purple)
+![python](https://img.shields.io/badge/python-3.13-blue) ![postgres](https://img.shields.io/badge/PostgreSQL-16%20%2B%20pgvector-336791) ![tests](https://img.shields.io/badge/offline%20tests-384%20passing-brightgreen) ![llm](https://img.shields.io/badge/LLM-Gemini%20%E2%86%92%20Groq%20%E2%86%92%20Meta-purple)
 
 | | |
 | --- | --- |
@@ -94,8 +94,16 @@ brew services start postgresql@16
 # pgvector for PG16 (the Homebrew bottle targets PG18/19), built from the official tag:
 curl -L -o pgvector.tar.gz https://github.com/pgvector/pgvector/archive/refs/tags/v0.8.7.tar.gz
 tar xzf pgvector.tar.gz && make -C pgvector-0.8.7 PG_CONFIG=$(brew --prefix postgresql@16)/bin/pg_config install
-for db in signal_fixture signal_live; do psql -d $db -c "CREATE EXTENSION IF NOT EXISTS vector"; done
-# then point SIGNAL_INGEST_DSN_FIXTURE / _LIVE at 127.0.0.1:5432 in .env
+# Run once on a fresh local instance as the PostgreSQL administrator.
+pg16_bin="$(brew --prefix postgresql@16)/bin"
+"$pg16_bin/psql" -p 5432 -d postgres -c "CREATE ROLE signal LOGIN PASSWORD 'signal'"
+for db in signal_fixture signal_live; do
+  "$pg16_bin/createdb" -p 5432 -O signal "$db"
+  "$pg16_bin/psql" -p 5432 -d "$db" -c "CREATE EXTENSION IF NOT EXISTS vector"
+done
+# Set SIGNAL_INGEST_DSN_FIXTURE and SIGNAL_INGEST_DSN_LIVE in .env to use port 5432.
+export SIGNAL_INGEST_TEST_DSN_FIXTURE=postgresql://signal:signal@127.0.0.1:5432/signal_fixture
+export SIGNAL_INGEST_TEST_DSN_LIVE=postgresql://signal:signal@127.0.0.1:5432/signal_live
 ```
 
 Apply the migrations (`migrations/001…009`):
@@ -104,9 +112,11 @@ Apply the migrations (`migrations/001…009`):
 .venv/bin/signal-ingest --mode live init-db      # live database
 ```
 
-### Smoke test (offline, about 40 s)
+### Smoke test (offline)
 ```bash
-SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates
+SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 \
+  .venv/bin/python -m pytest -q tests/gates/test_b7.py \
+  -k 'test_cli_crawl_work_export_stage_chain or test_r5_xlsx_six_tabs_headers_freeze_filter_and_text_cells'
 ```
 
 ## Configuration
@@ -229,12 +239,13 @@ signal-ingest b8-status                                     # recompute counts f
 ## Testing and quality gates
 
 ```bash
-SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates   # 395 passed
-TZ=Asia/Kolkata SIGNAL_INGEST_MODE=fixture .venv/bin/python -m pytest -q tests/gates               # timezone-independent
-.venv/bin/python tools/gate.py status                                                              # B0–B8 PASS
+SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 \
+  .venv/bin/python -m pytest -q tests/gates \
+  --ignore=tests/gates/test_b8.py --ignore=tests/gates/test_b9.py
 ```
 
-- The tests run offline against a fixture database with labelled synthetic fixtures, behind a network guard.
+- The B0–B7 suite passed 384 tests on a clean checkout using macOS, Python 3.13 and PostgreSQL 16. The first run generates local benchmark evidence and can take a few minutes.
+- B8 and B9 validate live-run and release evidence under `var/live/` and `artifacts/`. Those directories are local, so running those gates on a fresh clone reports missing evidence. The submitted data is available in the Google Sheet linked above.
 - LLM tests use a real `litellm.Router` with scripted provider outcomes: 429 → fallback, 413 → re-chunk, auth skip, quota race, paid-spend block.
 - Each build block (B0–B9, R1–R5) followed the same loop:
   1. write failing tests first
