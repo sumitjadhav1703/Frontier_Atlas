@@ -18,12 +18,21 @@ def list_monitor_source_ids(directory: Path | None = None) -> list[str]:
     return [c.source_id for c in load_monitor_configs(directory)]
 
 
-def load_monitor_configs(directory: Path | None = None) -> list[MonitorSourceConfig]:
+# Structured job feeds (e.g. Ashby posting API) share the monitor pipeline but are not
+# one of the brief's ten monitors (5 news + 5 job boards).
+FEED_SCOPES = frozenset({"jobs_feed"})
+
+
+def load_monitor_configs(
+    directory: Path | None = None, *, include_feeds: bool = False
+) -> list[MonitorSourceConfig]:
     entries = load_source_inventory(directory or DEFAULT_SOURCES_DIR)
     out: list[MonitorSourceConfig] = []
     for entry in entries:
         scope = str(entry.get("scope") or "")
         sid = str(entry.get("source_id") or "")
+        if scope in FEED_SCOPES and not include_feeds:
+            continue
         if scope not in MONITOR_SCOPES and not (
             sid.startswith("news_") or sid.startswith("jobs_")
         ):
@@ -36,7 +45,7 @@ def load_monitor_config(
     source_id: str,
     directory: Path | None = None,
 ) -> MonitorSourceConfig:
-    for cfg in load_monitor_configs(directory):
+    for cfg in load_monitor_configs(directory, include_feeds=True):
         if cfg.source_id == source_id:
             return cfg
     raise KeyError(f"unknown monitor source: {source_id}")

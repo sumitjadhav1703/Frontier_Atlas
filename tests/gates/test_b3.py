@@ -1404,3 +1404,39 @@ async def test_b9_pool_accept_encoding_excludes_br_and_zstd(tmp_fixture_env):
     codings = {c.split(";")[0].strip().lower() for c in accept.split(",") if c.strip()}
     assert codings and not codings & {"br", "zstd"}, accept
     assert codings <= {"gzip", "deflate", "identity"}, accept
+
+
+def _ashby_raw(row):
+    import json as _json
+
+    from signal_ingest.crawl.types import FetchOutcomeKind, RawObservation
+
+    url = "https://api.ashbyhq.com/posting-api/job-board/acme?includeCompensation=false"
+    return RawObservation(request_url=url, final_url=url, status_code=200, outcome=FetchOutcomeKind.OK,
+                          body=_json.dumps({"row": row}).encode(), content_type="application/json")
+
+
+def test_b9_ashby_board_rows_and_job_rules():
+    """Ashby feed: unlisted dropped, org:id identity, workplaceType beats isRemote, null/null quarantined."""
+    from signal_ingest.adapters.monitors import jobs_ashby_ai as A
+
+    listing = {"url": "https://api.ashbyhq.com/posting-api/job-board/acme", "sha256": "x"}
+    base = {"title": "Software Engineer, Inference", "department": "Engineering",
+            "publishedAt": "2026-11-21T10:00:00.000+00:00", "descriptionPlain": "Build inference systems.",
+            "jobUrl": "https://jobs.ashbyhq.com/acme/1"}
+    board = {"jobs": [{**base, "id": "1", "isListed": True, "workplaceType": "Hybrid", "isRemote": True},
+                      {**base, "id": "2", "isListed": False, "workplaceType": "Remote"},
+                      {**base, "id": "3", "isListed": True, "workplaceType": "Remote", "isRemote": False},
+                      {**base, "id": "4", "isListed": True, "workplaceType": None, "isRemote": None}]}
+    rows = A.rows_from_board(board, org="acme", company="Acme AI", listing=listing)
+    assert [r["id"] for r in rows] == ["1", "3", "4"]  # unlisted posting dropped
+
+    hybrid = A.parse_detail(_ashby_raw(rows[0]))
+    assert hybrid.external_id == "acme:1"
+    assert hybrid.payload["content"]["is_remote"] is False  # Hybrid is not fully remote even with isRemote=true
+    assert hybrid.payload["content"]["role_family"] == "ml_engineering"  # "Inference" in the title
+    assert hybrid.publication.precision == "instant" and hybrid.publication.lower.isoformat() == "2026-11-21T10:00:00+00:00"
+
+    assert A.parse_detail(_ashby_raw(rows[1])).payload["content"]["is_remote"] is True
+    unknown = A.parse_detail(_ashby_raw(rows[2]))
+    assert unknown.quarantine_reason == "remote_unspecified"

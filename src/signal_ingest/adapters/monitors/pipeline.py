@@ -14,6 +14,7 @@ from signal_ingest.adapters.monitors import (
     jobs_aicommunity,
     jobs_aijobs,
     jobs_aiworkportal,
+    jobs_ashby_ai,
     jobs_inferencejobs,
     jobs_moaijobs,
     news_arstechnica,
@@ -58,11 +59,14 @@ ADAPTERS: dict[str, Any] = {
     jobs_aicommunity.SOURCE_ID: jobs_aicommunity,
 }
 
+# The brief's 10 monitors (5 news + 5 job boards). Extra structured job feeds run through
+# the same pipeline but are not counted as one of the ten boards.
 MONITOR_SOURCES = frozenset(ADAPTERS)
+EXTRA_ADAPTERS: dict[str, Any] = {jobs_ashby_ai.SOURCE_ID: jobs_ashby_ai}
 
 
 def get_adapter(source_id: str) -> Any:
-    return ADAPTERS.get(source_id)
+    return ADAPTERS.get(source_id) or EXTRA_ADAPTERS.get(source_id)
 
 
 def is_monitor_source(source_id: str) -> bool:
@@ -212,7 +216,22 @@ async def process_fetch_stage(
     store = raw_store or RawStore.from_settings(cfg)
     fetch_policy = policy or FetchPolicy(mode=cfg.mode)
 
-    if cfg.mode.value == "fixture" and (
+    row = task.payload.get("row")
+    listing = row.get("_listing") if isinstance(row, dict) else None
+    if listing is not None:
+        # Listing-row shortcut (e.g. Ashby posting API): the row came from a fetched
+        # listing; evidence points at that listing and the item URL is never requested.
+        observation = RawObservation(
+            request_url=str(listing.get("url") or task.url),
+            final_url=str(listing.get("url") or task.url),
+            status_code=200,
+            outcome=FetchOutcomeKind.OK,
+            body=json.dumps({"row": row}).encode("utf-8"),
+            content_type="application/json",
+            fetched_at=get_clock().now(),
+            metadata={"listing_row_shortcut": True, "listing": listing, "item_url": task.url},
+        )
+    elif cfg.mode.value == "fixture" and (
         task.payload.get("row") is not None or task.payload.get("body") is not None
     ):
         body_obj = task.payload.get("row")

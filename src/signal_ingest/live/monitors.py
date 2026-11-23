@@ -233,6 +233,86 @@ def apply_body_cap(pool: HttpPool, cfg: Any) -> None:
                 pool.allow_origin_body_bytes(str(url), int(cap))
 
 
+def ashby_orgs(cfg: Any) -> list[tuple[str, str]]:
+    """inventory `ashby_orgs: slug=Display Name|...` -> [(slug, name)]."""
+    out = []
+    for part in str((cfg.raw or {}).get("ashby_orgs") or "").split("|"):
+        slug, _, name = part.partition("=")
+        if slug.strip():
+            out.append((slug.strip(), (name or slug).strip()))
+    return out
+
+
+async def fetch_ashby_rows(
+    settings: Settings, cfg: Any, *, interval_s: float = 1.0
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """One GET per configured board (paced 1 req/s, robots via the fetch policy)."""
+    import json as _json
+
+    from signal_ingest.adapters.monitors.jobs_ashby_ai import API_URL, rows_from_board
+
+    pool = HttpPool(
+        PoolLimits(
+            user_agent="signal-ingest/0.1 (+assessment)", per_origin_concurrency=1,
+            per_origin_min_interval_s=interval_s, max_compressed_bytes=12_000_000,
+            max_decoded_bytes=40_000_000, read_timeout_s=60.0, overall_timeout_s=90.0,
+        )
+    )
+    template = str((cfg.raw or {}).get("ashby_api_url") or API_URL)
+    rows: list[dict[str, Any]] = []
+    boards: list[dict[str, Any]] = []
+    try:
+        for slug, name in ashby_orgs(cfg):
+            url = template.format(org=slug)
+            obs = await probe_url(url, settings=settings, pool=pool)
+            board = {"org": slug, "url": url, "outcome": obs.outcome.value, "status": obs.status_code}
+            if obs.outcome is FetchOutcomeKind.OK and obs.body:
+                try:
+                    payload = _json.loads(obs.body)
+                except ValueError:
+                    payload = None
+                if isinstance(payload, dict):
+                    listing = {
+                        "url": obs.final_url or url,
+                        "sha256": fingerprint_bytes(obs.body),
+                        "fetched_at": (obs.fetched_at or get_clock().now()).isoformat(),
+                    }
+                    got = rows_from_board(payload, org=slug, company=name, listing=listing)
+                    board["listed"] = len(got)
+                    rows.extend(got)
+            boards.append(board)
+    finally:
+        await pool.aclose()
+    return rows, boards
+
+
+async def _crawl_ashby_live(settings: Settings, cfg: Any, *, run_id: str) -> dict[str, Any]:
+    from uuid import UUID
+
+    from signal_ingest.adapters.monitors.pipeline import discover_and_enqueue, finalize_monitor_run
+    from signal_ingest.storage.db import connect
+
+    rows, boards = await fetch_ashby_rows(settings, cfg)
+    now = get_clock().now()
+    now = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+    with connect(settings) as conn:
+        result = discover_and_enqueue(
+            conn, source_id=cfg.source_id, payload={"items": rows}, run_id=UUID(run_id),
+            cutoff=now, observed_at=now, base_url=str(cfg.documented_access_url),
+        )
+        finalize_monitor_run(
+            conn, source_id=cfg.source_id, cutoff_at=now, run_id=UUID(run_id),
+            failed=not rows,
+            discover_meta={"discovered": result.get("discovered"), "scan": result.get("scan"), "boards": boards},
+        )
+        conn.commit()
+    return {
+        "source_id": cfg.source_id, "ok": bool(rows), "boards": boards,
+        "discovered": result.get("discovered"), "enqueued": result.get("created"),
+        "skipped_seen": result.get("skipped"),
+    }
+
+
 async def _fetch_discovery(
     settings: Settings, source_id: str, cfg: Any, pool: HttpPool
 ) -> tuple[RawObservation, str, list[dict[str, Any]]]:
@@ -294,6 +374,8 @@ async def crawl_monitor_live(
 
     assert_live_mode(settings)
     cfg = load_monitor_config(source_id)
+    if (cfg.raw or {}).get("ashby_orgs"):
+        return await _crawl_ashby_live(settings, cfg, run_id=run_id)
     own = pool is None
     pool = pool or HttpPool(PoolLimits(user_agent="signal-ingest/0.1 (+assessment)"))
     try:
@@ -354,7 +436,7 @@ async def crawl_all_monitors_live(settings: Settings, *, run_id: str) -> dict[st
     pool = HttpPool(PoolLimits(user_agent="signal-ingest/0.1 (+assessment)"))
     out: list[dict[str, Any]] = []
     try:
-        for cfg in load_monitor_configs():
+        for cfg in load_monitor_configs(include_feeds=True):
             if status.get(cfg.source_id) != "qualified":
                 out.append({"source_id": cfg.source_id, "ok": False, "skipped": "not_qualified"})
                 continue
@@ -386,6 +468,9 @@ async def dry_probe_monitors(settings: Settings) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     try:
         for cfg in load_monitor_configs():
+            if (cfg.raw or {}).get("ashby_orgs"):
+                rows.append(await _dry_probe_ashby(settings, cfg, now))
+                continue
             obs, used_url, tried = await _fetch_discovery(settings, cfg.source_id, cfg, pool)
             row: dict[str, Any] = {"source_id": cfg.source_id, "discovery": obs.outcome.value, "url": used_url}
             if obs.outcome is FetchOutcomeKind.OK and obs.body:
@@ -413,3 +498,28 @@ async def dry_probe_monitors(settings: Settings) -> list[dict[str, Any]]:
     finally:
         await pool.aclose()
     return rows
+
+
+async def _dry_probe_ashby(settings: Settings, cfg: Any, now: datetime) -> dict[str, Any]:
+    """Per-board counts through the real adapter parse; nothing enqueued."""
+    import json as _json
+
+    from signal_ingest.adapters.monitors.jobs_ashby_ai import parse_detail as ashby_parse
+
+    rows, boards = await fetch_ashby_rows(settings, cfg)
+    per: dict[str, dict[str, Any]] = {b["org"]: {**b, "jobs": 0, "parsed": 0, "fresh_24h": 0, "remote_true": 0, "remote_false": 0, "quarantined": {}} for b in boards}
+    for row in rows:
+        stats = per[row["org"]]
+        stats["jobs"] += 1
+        raw = RawObservation(
+            request_url=row["_listing"]["url"], final_url=row["_listing"]["url"], status_code=200,
+            outcome=FetchOutcomeKind.OK, body=_json.dumps({"row": row}).encode(), content_type="application/json",
+        )
+        res = ashby_parse(raw, cutoff=now)
+        if not res.ok:
+            stats["quarantined"][res.quarantine_reason] = stats["quarantined"].get(res.quarantine_reason, 0) + 1
+            continue
+        stats["parsed"] += 1
+        stats["fresh_24h"] += bool(res.eligible)
+        stats["remote_true" if res.payload["content"]["is_remote"] else "remote_false"] += 1
+    return {"source_id": cfg.source_id, "boards": list(per.values())}

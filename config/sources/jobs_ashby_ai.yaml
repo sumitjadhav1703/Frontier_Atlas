@@ -1,0 +1,19 @@
+source_id: jobs_ashby_ai
+canonical_publisher: Ashby job boards (AI companies)
+scope: jobs_feed
+status: qualified
+documented_access_url: "https://developers.ashbyhq.com/docs/public-job-posting-api"
+policy_url: "https://api.ashbyhq.com/robots.txt"
+review_date: 2026-11-23
+allowed_text_use: public_job_posting_api_employer_published
+original_time_field: publishedAt
+original_timezone: UTC
+pagination_stop_rule: one_get_per_org_board_all_listed_postings
+attribution: Employer job boards via Ashby public Job Postings API (no auth); jobUrl is the original employer posting
+domain_governor: api.ashbyhq.com
+fallback: none; a board returning 404 is dropped from ashby_orgs
+ashby_api_url: "https://api.ashbyhq.com/posting-api/job-board/{org}?includeCompensation=false"
+ashby_orgs: openai=OpenAI|cohere=Cohere|perplexity=Perplexity|elevenlabs=ElevenLabs|runway=Runway|harvey=Harvey|sierra=Sierra|decagon=Decagon|cursor=Cursor|replit=Replit|character=Character.AI|poolside=Poolside|modal=Modal|baseten=Baseten|langchain=LangChain|pinecone=Pinecone|cognition=Cognition|suno=Suno|pika=Pika|ideogram=Ideogram|writer=Writer|deepgram=Deepgram|cartesia=Cartesia|lovable=Lovable|vapi=Vapi
+reviewer: desk-research
+probe_artifact: null
+notes: Org list = candidate AI-company boards probed once on 2026-11-23 that returned 200 with listed jobs (404: anysphere, hebbia, glean, mistral, assemblyai, synthflow). Board JSON has no org display name, so company = configured name. is_remote: workplaceType Remote=true, OnSite/Hybrid=false (Ashby sets isRemote=true on Hybrid roles), else isRemote, else quarantine. Paced 1 req/s.
