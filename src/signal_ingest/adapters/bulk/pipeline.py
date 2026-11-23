@@ -13,6 +13,7 @@ import psycopg
 
 from signal_ingest.adapters.bulk import arxiv as arxiv_adapter
 from signal_ingest.adapters.bulk import github as github_adapter
+from signal_ingest.adapters.bulk import openrouter as openrouter_adapter
 from signal_ingest.adapters.bulk import papers as papers_adapter
 from signal_ingest.adapters.bulk import products as products_adapter
 from signal_ingest.adapters.bulk import yc as yc_adapter
@@ -51,9 +52,10 @@ SOURCE_PRODUCTS = products_adapter.SOURCE_ID
 SOURCE_PAPERS = papers_adapter.SOURCE_ID
 SOURCE_ARXIV = arxiv_adapter.SOURCE_ID
 SOURCE_GITHUB = github_adapter.SOURCE_ID
+SOURCE_OPENROUTER = openrouter_adapter.SOURCE_ID
 
 BULK_SOURCES = frozenset(
-    {SOURCE_YC, SOURCE_PRODUCTS, SOURCE_PAPERS, SOURCE_ARXIV, SOURCE_GITHUB}
+    {SOURCE_YC, SOURCE_PRODUCTS, SOURCE_PAPERS, SOURCE_ARXIV, SOURCE_GITHUB, SOURCE_OPENROUTER}
 )
 
 STAGE_FETCH = "fetch"
@@ -68,6 +70,7 @@ def get_adapter(source_id: str) -> Any:
         SOURCE_PAPERS: papers_adapter,
         SOURCE_ARXIV: arxiv_adapter,
         SOURCE_GITHUB: github_adapter,
+        SOURCE_OPENROUTER: openrouter_adapter,
     }.get(source_id)
 
 
@@ -160,6 +163,10 @@ def _discover_items(
         return papers_adapter.discover_from_payload(
             payload, partition=partition, revision=revision
         )
+    if source_id == SOURCE_OPENROUTER:
+        return openrouter_adapter.discover_from_payload(
+            payload, partition=partition, revision=revision
+        )
     if source_id == SOURCE_ARXIV:
         ids = payload if isinstance(payload, list) else list(payload.get("ids") or [])
         return arxiv_adapter.discover_ids(ids, partition=partition, revision=revision)
@@ -180,7 +187,7 @@ async def process_bulk_task(
 ) -> dict[str, Any]:
     """Dispatch bulk stages. Fixture-mode loopback only for HTTP."""
     if task.stage == STAGE_PARSE:
-        return process_parse_stage(conn, task)
+        return process_parse_stage(conn, task, settings=settings)
     if task.stage == STAGE_ENRICH_STARS:
         return await process_enrich_stars_stage(
             conn,
@@ -214,20 +221,41 @@ async def process_fetch_stage(
     store = raw_store or RawStore.from_settings(cfg)
     fetch_policy = policy or FetchPolicy(mode=cfg.mode)
 
-    # Fixture shortcut: payload already carries the row — synthesize a local body.
-    if cfg.mode.value == "fixture" and task.payload.get("row") is not None:
-        body = json.dumps({"row": task.payload["row"], "repo_edges": task.payload.get("repo_edges")}).encode(
+    row = task.payload.get("row")
+    listing = row.get("_listing") if isinstance(row, dict) else None
+    # Row shortcut: the row was already fetched in a listing (live) or is a labeled
+    # fixture. Products with a listing still GET the vendor homepage for owner evidence.
+    shortcut = row is not None and (
+        (listing is not None and task.source_id != SOURCE_PRODUCTS)
+        or (listing is None and cfg.mode.value == "fixture")
+    )
+    if shortcut:
+        body = json.dumps({"row": row, "repo_edges": task.payload.get("repo_edges")}).encode(
             "utf-8"
         )
+        if listing is not None:
+            # Evidence points at the fetched listing page; the item URL is never requested.
+            metadata = {
+                "listing_row_shortcut": True,
+                "listing": listing,
+                "item_url": task.url,
+                "adapter": task.payload.get("adapter"),
+            }
+            fetched_at = _listing_time(listing) or get_clock().now()
+            request_url = str(listing.get("url") or task.url)
+        else:
+            metadata = {"fixture_loopback": True, "adapter": task.payload.get("adapter")}
+            fetched_at = get_clock().now()
+            request_url = task.url
         observation = RawObservation(
-            request_url=task.url,
-            final_url=task.url,
+            request_url=request_url,
+            final_url=request_url,
             status_code=200,
             outcome=FetchOutcomeKind.OK,
             body=body,
             content_type="application/json",
-            fetched_at=get_clock().now(),
-            metadata={"fixture_loopback": True, "adapter": task.payload.get("adapter")},
+            fetched_at=fetched_at,
+            metadata=metadata,
         )
     else:
         cached_etag = None
@@ -242,7 +270,7 @@ async def process_fetch_stage(
             fetch_policy,
             pool=pool,
             settings=cfg,
-            headers=_github_headers(task.url),
+            headers=_fetch_headers(task.url),
             cached_etag=cached_etag,
             cached_body=cached_body,
             cached_meta=cached_meta,
@@ -294,7 +322,9 @@ async def process_fetch_stage(
     }
 
 
-def process_parse_stage(conn: psycopg.Connection, task: ClaimedTask) -> dict[str, Any]:
+def process_parse_stage(
+    conn: psycopg.Connection, task: ClaimedTask, *, settings: Settings | None = None
+) -> dict[str, Any]:
     """Load parent fetch observation and run the source adapter parse."""
     parent_id = task.parent_task_id
     fetch_task_id = task.payload.get("fetch_task_id")
@@ -309,8 +339,11 @@ def process_parse_stage(conn: psycopg.Connection, task: ClaimedTask) -> dict[str
         _fail_task(conn, task, "missing_observation")
         return {"ok": False, "stage": STAGE_PARSE, "reason": "missing_observation"}
 
-    raw = _raw_from_observation_row(conn, obs_row, task=task)
+    raw = _raw_from_observation_row(conn, obs_row, task=task, settings=settings)
     result = dispatch_parse(task.source_id, raw, task.payload)
+    row = task.payload.get("row")
+    if result.ok and isinstance(row, dict) and row.get("_listing"):
+        result.evidence.setdefault("listing", row["_listing"])
 
     with conn.transaction():
         obs_id = UUID(str(obs_row["id"])) if obs_row.get("id") else None
@@ -446,7 +479,7 @@ async def process_enrich_stars_stage(
             fetch_policy,
             pool=pool,
             settings=cfg,
-            headers=_github_headers(task.url),
+            headers=_fetch_headers(task.url),
             cached_etag=cached_etag,
             cached_body=cached_body,
             cached_meta=cached_meta,
@@ -597,6 +630,8 @@ def dispatch_parse(
             repo_edges=payload.get("repo_edges"),
             arxiv_meta=payload.get("arxiv_meta"),
         )
+    if source_id == SOURCE_OPENROUTER:
+        return openrouter_adapter.parse_observation(raw, row=row)
     if source_id == SOURCE_ARXIV:
         return arxiv_adapter.parse_observation(raw)
     if source_id == SOURCE_GITHUB:
@@ -660,6 +695,22 @@ def _enqueue_enrich_stars(
         },
         version=f"run:{task.run_id}",
     )
+
+
+def _listing_time(listing: dict[str, Any]) -> datetime | None:
+    try:
+        dt = datetime.fromisoformat(str(listing.get("fetched_at")).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+# The shared pool inflates only gzip/deflate under its byte caps; never advertise br/zstd.
+_ACCEPT_ENCODING = {"Accept-Encoding": "gzip, deflate"}
+
+
+def _fetch_headers(url: str) -> dict[str, str]:
+    return {**_ACCEPT_ENCODING, **(_github_headers(url) or {})}
 
 
 def _github_headers(url: str) -> dict[str, str] | None:
@@ -835,13 +886,13 @@ def _raw_from_observation_row(
     obs_row: dict[str, Any],
     *,
     task: ClaimedTask,
+    settings: Settings | None = None,
 ) -> RawObservation:
     body = None
     content_key = obs_row.get("content_key")
     content_sha = obs_row.get("content_sha256")
     if content_key or content_sha:
-        settings = get_settings()
-        store = RawStore.from_settings(settings)
+        store = RawStore.from_settings(settings or get_settings())
         try:
             if content_sha and store.exists(content_sha):
                 body = store.read(content_sha)

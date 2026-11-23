@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B8 papers listing: pwc-archive links /rows pages + one OpenAlex works batch by arXiv DOI",
+    "review_date": "2026-11-23",
+    "not_for_live_export": true,
+    "modeled_on": "datasets-server /rows (links-between-paper-and-code) and api.openalex.org/works?filter=doi:"
+  },
+  "links_pages": {
+    "0": {"rows": [
+      {"row_idx": 0, "row": {"paper_url": "https://paperswithcode.com/paper/synth-twin-edges", "paper_title": "Synth Twin Edges", "paper_arxiv_id": "2401.11111v2", "repo_url": "https://github.com/synth-org/twin-a", "is_official": true, "framework": "pytorch"}},
+      {"row_idx": 1, "row": {"paper_url": "https://paperswithcode.com/paper/synth-twin-edges", "paper_title": "Synth Twin Edges", "paper_arxiv_id": "2401.11111", "repo_url": "https://github.com/synth-org/twin-b", "is_official": true, "framework": "jax"}},
+      {"row_idx": 2, "row": {"paper_url": "https://paperswithcode.com/paper/synth-unofficial", "paper_title": "Synth Unofficial", "paper_arxiv_id": "2402.22222", "repo_url": "https://github.com/someone/reimpl", "is_official": false, "framework": "pytorch"}},
+      {"row_idx": 3, "row": {"paper_url": "https://paperswithcode.com/paper/synth-no-arxiv", "paper_title": "Synth No Arxiv", "paper_arxiv_id": null, "repo_url": "https://github.com/synth-org/no-arxiv", "is_official": true, "framework": "none"}},
+      {"row_idx": 4, "row": {"paper_url": "https://paperswithcode.com/paper/synth-gitlab", "paper_title": "Synth Gitlab", "paper_arxiv_id": "2403.33333", "repo_url": "https://gitlab.com/synth-org/gitlab-only", "is_official": true, "framework": "none"}}
+    ]},
+    "100": {"rows": [
+      {"row_idx": 100, "row": {"paper_url": "https://paperswithcode.com/paper/synth-merged-journal", "paper_title": "Synth Merged Journal", "paper_arxiv_id": "2404.44444", "repo_url": "https://github.com/synth-org/merged", "is_official": true, "framework": "pytorch"}},
+      {"row_idx": 101, "row": {"paper_url": "https://paperswithcode.com/paper/synth-not-in-openalex", "paper_title": "Synth Not In OpenAlex", "paper_arxiv_id": "2405.55555", "repo_url": "https://github.com/synth-org/missing-meta", "is_official": true, "framework": "pytorch"}}
+    ]},
+    "200": {"rows": []}
+  },
+  "openalex": {
+    "meta": {"count": 2, "page": 1, "per_page": 100},
+    "results": [
+      {"doi": "https://doi.org/10.48550/arxiv.2401.11111", "title": "Synth Twin Edges", "publication_date": "2024-01-20",
+       "authorships": [{"author": {"display_name": "F. Twin"}}, {"author": {"display_name": "G. Edge"}}],
+       "ids": {"openalex": "https://openalex.org/W9000000001", "doi": "https://doi.org/10.48550/arxiv.2401.11111"},
+       "locations": [{"landing_page_url": "https://arxiv.org/abs/2401.11111", "pdf_url": "https://arxiv.org/pdf/2401.11111"}]},
+      {"doi": "https://doi.org/10.1000/synth-journal.2024.042", "title": "Synth Merged Journal", "publication_date": "2024-04-15",
+       "authorships": [{"author": {"display_name": "H. Merger"}}],
+       "ids": {"openalex": "https://openalex.org/W9000000002", "doi": "https://doi.org/10.1000/synth-journal.2024.042"},
+       "locations": [{"landing_page_url": "https://synth-journal.fixtures.local/article/42", "pdf_url": null},
+                     {"landing_page_url": "https://arxiv.org/abs/2404.44444v1", "pdf_url": "https://arxiv.org/pdf/2404.44444v1"}]}
+    ]
+  }
+}

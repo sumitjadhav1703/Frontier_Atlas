@@ -13,12 +13,12 @@ attribution: AgiPicks attributed open product JSON; carry license and attributio
 domain_governor: agipicks.com
 fallback: FutureTools browse directory and YC company official product/pricing pages
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_agipicks_products/bulk_discovery_20261121T190738Z.json
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_agipicks_products/listing_20261122T200845Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: 2d8df09386bba36f5d029bfc6b0f3a3c77c81de1a1c43658770d0fb258f9391a
 probe_sample_date: "2026-11-21T19:07:38.575803+00:00"
-probe_rate_limit_headers: "{'alt-svc': 'h3=\":443\"; ma=2592000', 'cache-control': 'public, max-age=300', 'content-type': 'application/json', 'date': 'Sat, 21 Nov 2026 19:07:37 GMT', 'etag': '\"6b01dc00-f8fa3-gzip\"', 'last-modified': 'Sat, 21 Nov 2026 17:59:28 GMT', 'referrer-policy': 'strict-origin-when-cross-origin', 'strict-transport-security': 'max-age=31536000', 'vary': 'Accept-Encoding', 'via': '1.1 Caddy', 'x-content-type-options': 'nosniff', 'x-frame-options': 'SAMEORIGIN', 'transfer-encoding': 'chunked', 'content-length': '1019811'}"
-probe_observed_at: "2026-11-21T19:07:38.575816+00:00"
+probe_rate_limit_headers: "{'alt-svc': 'h3=\\\":443\\\"; ma=2592000', 'cache-control': 'public, max-age=300', 'content-type': 'application/json', 'date': 'Sat, 21 Nov 2026 19:07:37 GMT', 'etag': '\\\"6b01dc00-f8fa3-gzip\\\"', 'last-modified': 'Sat, 21 Nov 2026 17:59:28 GMT', 'referrer-policy': 'strict-origin-when-cross-origin', 'strict-transport-security': 'max-age=31536000', 'vary': 'Accept-Encoding', 'via': '1.1 Caddy', 'x-content-type-options': 'nosniff', 'x-frame-options': 'SAMEORIGIN', 'transfer-encoding': 'chunked', 'content-length': '1019811'}"
+probe_observed_at: "2026-11-22T20:08:43.588694+00:00"
 probe_error: HTTP 404
-probe_pilot_count: 30
+probe_pilot_count: 1166
 notes: Plan-level CSVs may have many rows per product; owner spelling stored separately.

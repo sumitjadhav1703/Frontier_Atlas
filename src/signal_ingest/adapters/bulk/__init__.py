@@ -1,4 +1,4 @@
-"""B2 bulk adapters: YC, products, papers, arXiv, GitHub metrics."""
+"""B2 bulk adapters: YC, products, OpenRouter, papers, arXiv, GitHub metrics."""
 
 from signal_ingest.adapters.bulk.eligibility import (
     count_eligible_papers,
@@ -32,6 +32,7 @@ from signal_ingest.adapters.bulk.pipeline import (
     BULK_SOURCES,
     SOURCE_ARXIV,
     SOURCE_GITHUB,
+    SOURCE_OPENROUTER,
     SOURCE_PAPERS,
     SOURCE_PRODUCTS,
     SOURCE_YC,
@@ -53,6 +54,7 @@ __all__ = [
     "RepoMetricSnapshot",
     "SOURCE_ARXIV",
     "SOURCE_GITHUB",
+    "SOURCE_OPENROUTER",
     "SOURCE_PAPERS",
     "SOURCE_PRODUCTS",
     "SOURCE_YC",

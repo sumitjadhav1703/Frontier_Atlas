@@ -80,6 +80,15 @@ Exact six tab names: Startups, Products, Research Papers, Jobs, News, Entity Map
 - PDF (≤3 pages): [architecture.pdf](architecture.pdf)
 - Live measurements (bytes/item, yield, RPS, token latency, ≥1000 counts): **PENDING** — do not invent numbers.
 
+## R4 · pgvector suggestions and typed relationships
+
+- `migrations/009_r4_vector.sql` adds `entities.embedding vector(384)` + `embedding_model` (HNSW cosine index) and `relationships.evidence_observation_id`, `valid_from`, `valid_to`, plus a CHECK on the relationship types.
+- `resolution/embed.py`: `embed_entities(conn, FastEmbedder())` embeds name + description with `BAAI/bge-small-en-v1.5`. `suggest_candidates(...)` returns HNSW top-k candidates above 0.85 cosine.
+- Embeddings only suggest. Deterministic rules make every merge, so the B6 FP=0 gate is unchanged. `annotate_mapping_suggestions` fills the Entity Mapping Log `suggested_candidates` column.
+- `flag_near_duplicate_news` sets `nearDuplicateOf` on same-run News rows with title cosine ≥0.95. It never drops a row.
+- Both columns appear in exports only when embeddings produced a value. Exports without embeddings are byte-identical to the earlier ones.
+- Graph demo: `docs/queries/papers_by_yc_startups.sql` (a `WITH RECURSIVE` query over relational edges, up to 6 OWNS hops), run by `resolution.graph_queries.papers_by_yc_startups(conn)`. It is tested on synthetic edges. The bulk adapters do not yet write organization→repository OWNS edges, so on live data it returns rows only after such edges exist.
+
 ## Phase V · Challenged monitor case (`news_arstechnica`)
 
 High-value news source with an observed detail-route challenge during B8 qualification.

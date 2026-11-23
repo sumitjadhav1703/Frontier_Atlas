@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B8 vendor homepage HTML for deterministic owner extraction and LLM fallback",
+    "review_date": "2026-11-23",
+    "not_for_live_export": true,
+    "modeled_on": "vendor homepages with JSON-LD Organization, @graph WebSite.publisher, footer copyright"
+  },
+  "pages": {
+    "jsonld_org": "<!doctype html><html><head><title>Synth Paid</title><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Synth Paid\",\"legalName\":\"Synth Widgets Corporation\",\"url\":\"https://synthpaid.example/\"}</script></head><body><h1>Synth Paid</h1><p>Design faster.</p></body></html>",
+    "jsonld_org_name_only": "<!doctype html><html><head><title>Synth Free</title><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Synth Free Tools Ltd\"}</script></head><body><h1>Synth Free</h1></body></html>",
+    "graph_publisher": "<!doctype html><html><head><title>Synth Freemium</title><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"WebPage\",\"@id\":\"https://synthfreemium.example/#webpage\",\"name\":\"Home\"},{\"@type\":\"WebSite\",\"@id\":\"https://synthfreemium.example/#website\",\"name\":\"Synth Freemium\",\"publisher\":{\"@id\":\"https://synthfreemium.example/#org\"}},{\"@type\":\"Organization\",\"@id\":\"https://synthfreemium.example/#org\",\"name\":\"Quill Systems GmbH\"}]}</script></head><body><h1>Synth Freemium</h1></body></html>",
+    "footer_copyright": "<!doctype html><html><head><title>Synth Contact</title></head><body><h1>Synth Contact</h1><p>Book a demo.</p><footer><p>&copy; 2026 Synth Labs Inc. All rights reserved.</p></footer></body></html>",
+    "no_owner": "<!doctype html><html><head><title>Synth OSS</title></head><body><h1>Synth OSS</h1><p>The best tool for writing code.</p><footer><a href=\"/privacy\">Privacy</a></footer></body></html>",
+    "llm_grounded": "<!doctype html><html><head><title>Synth Free</title></head><body><h1>Synth Free</h1><p>Synth Free is built and operated by Lantern Robotics.</p></body></html>"
+  }
+}

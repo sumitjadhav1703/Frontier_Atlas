@@ -741,3 +741,457 @@ def test_r3_plain_word_seed_names_need_corroboration():
     assert _dec(_resolve("Writer", register=reg)) != "match"
     assert _dec(_resolve("Groq", register=reg)) != "match"
     assert _dec(_resolve("OPENAI", register=reg)) == "match"  # distinctive seed spelling
+
+
+# ---------------------------------------------------------------------------
+# R4 — pgvector candidate suggestions + typed relationships (notes/r4-work-order.md)
+# Offline: FakeEmbedder (hashed bag-of-words, 384 dims). No model download.
+# ---------------------------------------------------------------------------
+
+from tests.integration import r4_api  # noqa: E402
+
+R4_MIGRATION = Path(__file__).resolve().parents[2] / "migrations" / "009_r4_vector.sql"
+R4_NEW_REL_TYPES = ("FOUNDED_BY", "AUTHORED", "IMPLEMENTED_BY", "OWNS", "MENTIONS", "HIRING")
+
+
+@pytest.fixture
+def r4_db(tmp_fixture_env, frozen_clock):
+    """Fixture-mode DB with migrations applied and an empty entity crosswalk."""
+    from signal_ingest.config import Mode, clear_settings_cache, load_settings
+    from signal_ingest.storage import connect, init_db
+
+    clear_settings_cache()
+    settings = load_settings(mode=Mode.FIXTURE)
+    init_db(settings)
+    with connect(settings) as conn:
+        conn.execute(
+            "TRUNCATE resolution_events, source_identities, entities RESTART IDENTITY CASCADE"
+        )
+        conn.commit()
+    return settings
+
+
+def _r4_insert_entity(conn, eid: str, name: str) -> None:
+    from signal_ingest.resolution import comparison_key
+
+    conn.execute(
+        """
+        INSERT INTO entities (id, namespace, canonical_name, lineage_mode, comparison_key)
+        VALUES (%s, 'startup', %s, 'fixture', %s)
+        """,
+        (eid, name, comparison_key(name)),
+    )
+
+
+R4_ENTITIES = (
+    ("fixture.r4.zephyr", "Zephyr Quantum Robotics"),
+    ("fixture.r4.zephyr-labs", "Zephyr Quantum Robotics Labs"),
+    ("fixture.r4.bluefin", "Bluefin Bakery"),
+)
+
+
+def _r4_seed_entities(settings, embedder=None):
+    from signal_ingest.storage import connect
+
+    with connect(settings) as conn:
+        for eid, name in R4_ENTITIES:
+            _r4_insert_entity(conn, eid, name)
+        if embedder is not None:
+            r4_api.embed_entities(conn, embedder)
+        conn.commit()
+
+
+def test_r4_migration_009_applies_twice_with_vector_column_and_hnsw(r4_db):
+    """009 is idempotent through init_db and as a raw re-run; vector + HNSW exist.
+
+    Detects: missing migration, non-idempotent DDL, wrong dimension, missing index.
+    """
+    from signal_ingest.storage import connect, init_db
+    from signal_ingest.storage.db import _run_sql_script
+
+    assert R4_MIGRATION.is_file(), "migrations/009_r4_vector.sql missing"
+    assert "009_r4_vector.sql" not in init_db(r4_db)  # second apply via runner: no-op
+    with connect(r4_db) as conn:
+        _run_sql_script(conn, R4_MIGRATION.read_text(encoding="utf-8"))  # raw re-run
+        _run_sql_script(conn, R4_MIGRATION.read_text(encoding="utf-8"))
+        conn.commit()
+        assert conn.execute(
+            "SELECT 1 FROM schema_migrations WHERE version = '009_r4_vector.sql'"
+        ).fetchone()
+        assert conn.execute("SELECT 1 FROM pg_extension WHERE extname = 'vector'").fetchone()
+        cols = dict(
+            conn.execute(
+                """
+                SELECT a.attname, format_type(a.atttypid, a.atttypmod)
+                FROM pg_attribute a
+                WHERE a.attrelid = 'entities'::regclass AND a.attnum > 0 AND NOT a.attisdropped
+                """
+            ).fetchall()
+        )
+        assert cols.get("embedding") == "vector(384)", cols
+        assert cols.get("embedding_model") == "text", cols
+        idx = [
+            r[0]
+            for r in conn.execute(
+                "SELECT indexdef FROM pg_indexes WHERE tablename = 'entities'"
+            ).fetchall()
+        ]
+        assert any(
+            "hnsw" in d.lower() and "vector_cosine_ops" in d and "embedding" in d for d in idx
+        ), idx
+        rel = dict(
+            conn.execute(
+                """
+                SELECT a.attname, format_type(a.atttypid, a.atttypmod)
+                FROM pg_attribute a
+                WHERE a.attrelid = 'relationships'::regclass AND a.attnum > 0
+                  AND NOT a.attisdropped
+                """
+            ).fetchall()
+        )
+        assert rel.get("valid_from") == "timestamp with time zone", rel
+        assert rel.get("valid_to") == "timestamp with time zone", rel
+        assert "evidence_observation_id" in rel, rel
+        nullable = conn.execute(
+            """
+            SELECT is_nullable FROM information_schema.columns
+            WHERE table_name = 'relationships' AND column_name = 'evidence_observation_id'
+            """
+        ).fetchone()
+        assert nullable and nullable[0] == "YES"
+
+
+def test_r4_relationship_type_check_accepts_typed_edges_rejects_unknown(r4_db):
+    """CHECK admits the existing + R4 relation types and rejects an unknown one.
+
+    Detects: missing new types (FOUNDED_BY/AUTHORED/MENTIONS/HIRING) or no CHECK at all.
+    """
+    import psycopg
+    from uuid import uuid4
+
+    from signal_ingest.storage import connect
+
+    sql = """
+        INSERT INTO relationships (id, relation_type, from_kind, from_key, to_kind, to_key,
+                                   valid_from, valid_to)
+        VALUES (%s, %s, 'organization', %s, 'person', %s, NOW(), NULL)
+    """
+    with connect(r4_db) as conn:
+        try:
+            for rtype in R4_NEW_REL_TYPES + ("ALIASED_AS", "SAME_AS"):
+                conn.execute(sql, (uuid4(), rtype, f"r4-check-{rtype}", f"r4-check-{rtype}-to"))
+            with pytest.raises(psycopg.errors.CheckViolation):
+                with conn.transaction():
+                    conn.execute(sql, (uuid4(), "FRIENDS_WITH", "r4-check-x", "r4-check-y"))
+        finally:
+            conn.rollback()  # leave no edges behind in the shared fixture DB
+
+
+def test_r4_embed_entities_fills_null_and_reembeds_on_model_change(r4_db):
+    """embed_entities covers NULL embeddings, skips current ones, redoes stale models.
+
+    Detects: re-embedding everything every run, or ignoring embedding_model drift.
+    """
+    from signal_ingest.storage import connect
+
+    first = r4_api.FakeEmbedder()
+    _r4_seed_entities(r4_db, first)
+    assert len(first.calls) == len(R4_ENTITIES)
+    assert any("Zephyr Quantum Robotics" in t for t in first.calls)
+
+    with connect(r4_db) as conn:
+        rows = conn.execute(
+            "SELECT embedding IS NOT NULL, embedding_model FROM entities WHERE id LIKE 'fixture.r4.%%'"
+        ).fetchall()
+        assert rows and all(r[0] and r[1] == first.model_id for r in rows), rows
+
+        again = r4_api.FakeEmbedder()
+        r4_api.embed_entities(conn, again)
+        assert again.calls == [], "current embeddings must not be recomputed"
+
+        changed = r4_api.FakeEmbedder(model_id="fake-hash-bow-384-v2")
+        r4_api.embed_entities(conn, changed)
+        conn.commit()
+        assert len(changed.calls) == len(R4_ENTITIES)
+        models = {
+            r[0]
+            for r in conn.execute(
+                "SELECT embedding_model FROM entities WHERE id LIKE 'fixture.r4.%%'"
+            ).fetchall()
+        }
+        assert models == {"fake-hash-bow-384-v2"}
+
+
+def test_r4_suggest_candidates_nearest_entity_and_excludes_self(r4_db):
+    """HNSW cosine query returns the nearest entity first and honors exclude/threshold.
+
+    Detects: wrong distance operator (L2/inner), missing self-exclusion, no threshold.
+    """
+    from signal_ingest.storage import connect
+
+    fake = r4_api.FakeEmbedder()
+    _r4_seed_entities(r4_db, fake)
+    with connect(r4_db) as conn:
+        loose = r4_api.suggest_candidates(
+            conn, "Zephyr Quantum Robotics", fake, k=3, min_similarity=0.0
+        )
+        assert loose, "no suggestions returned"
+        assert set(loose[0]) >= {"entity_id", "canonical_name", "similarity"}
+        assert loose[0]["entity_id"] == "fixture.r4.zephyr"
+        assert loose[0]["canonical_name"] == "Zephyr Quantum Robotics"
+        assert float(loose[0]["similarity"]) == pytest.approx(1.0, abs=1e-4)
+        sims = [float(s["similarity"]) for s in loose]
+        assert sims == sorted(sims, reverse=True)
+
+        # Default threshold 0.85 keeps the 0.866 neighbour and drops the bakery.
+        default = r4_api.suggest_candidates(conn, "Zephyr Quantum Robotics", fake)
+        ids = [s["entity_id"] for s in default]
+        assert "fixture.r4.bluefin" not in ids
+        assert ids[:2] == ["fixture.r4.zephyr", "fixture.r4.zephyr-labs"]
+
+        no_self = r4_api.suggest_candidates(
+            conn, "Zephyr Quantum Robotics", fake, exclude_entity_id="fixture.r4.zephyr"
+        )
+        assert [s["entity_id"] for s in no_self] == ["fixture.r4.zephyr-labs"]
+        assert float(no_self[0]["similarity"]) == pytest.approx(
+            r4_api.cosine("Zephyr Quantum Robotics", "Zephyr Quantum Robotics Labs"), abs=1e-3
+        )
+
+        assert len(r4_api.suggest_candidates(conn, "Zephyr Quantum Robotics", fake, k=1)) == 1
+        assert r4_api.suggest_candidates(conn, "Completely Unrelated Words", fake) == []
+
+
+def test_r4_suggest_candidates_empty_without_embeddings(r4_db):
+    """No embeddings computed → no suggestions (fixture exports stay byte-stable)."""
+    from signal_ingest.storage import connect
+
+    _r4_seed_entities(r4_db, embedder=None)
+    with connect(r4_db) as conn:
+        out = r4_api.suggest_candidates(
+            conn, "Zephyr Quantum Robotics", r4_api.FakeEmbedder(), min_similarity=0.0
+        )
+        assert out == []
+
+
+def _r4_decision_table(reg) -> list[tuple]:
+    rows: list[tuple] = []
+    for p in _load_json("positives.json")["positives"]:
+        cand = b6_api.make_candidate(**{k: v for k, v in p.items() if k not in {"expected_id", "expected_name"}})
+        r = b6_api.resolve(cand, register=reg)
+        rows.append(("pos", p["raw_name"], _dec(r), _cid(r), r.method))
+    for n in _load_json("holdout_negatives.json")["negatives"]:
+        for side in ("left", "right"):
+            r = b6_api.resolve(b6_api.make_candidate(**n[side]), register=reg)
+            rows.append(("neg", n["id"], side, _dec(r), _cid(r), r.method))
+    for case in _load_json("cases.json")["cases"]:
+        for inp in case["inputs"]:
+            payload = dict(inp)
+            ns = payload.pop("namespace", "startup")
+            raw = payload.pop("raw_name")
+            r = _resolve(raw, namespace=ns, register=reg, **payload)
+            rows.append(("case", case["id"], raw, _dec(r), _cid(r), r.method))
+    return rows
+
+
+def _r4_metrics(reg) -> dict[str, Any]:
+    positives = _load_json("positives.json")["positives"]
+    holdout = _load_json("holdout_negatives.json")["negatives"]
+    pairs = [{"kind": "positive", **p} for p in positives] + [
+        {"kind": "negative", "left": n["left"], "right": n["right"], "id": n["id"]}
+        for n in holdout
+    ]
+    return b6_api.evaluate_metrics(pairs, register=reg)
+
+
+def test_r4_embeddings_never_change_resolution_decisions(r4_db):
+    """B6 decisions and TP/FP/FN are identical with and without embeddings (FP=0).
+
+    Detects: embedding similarity leaking into merge decisions (auto-merge).
+    """
+    from signal_ingest.resolution import persist_seed_register
+    from signal_ingest.storage import connect
+
+    reg = _register()
+    before_table = _r4_decision_table(reg)
+    before = _r4_metrics(reg)
+    assert before["fp"] == 0
+
+    fake = r4_api.FakeEmbedder()
+    with connect(r4_db) as conn:
+        persist_seed_register(conn, reg)
+        r4_api.embed_entities(conn, fake)
+        conn.commit()
+        n = conn.execute("SELECT COUNT(*) FROM entities WHERE embedding IS NOT NULL").fetchone()
+        assert int(n[0]) >= 50, "with-embeddings arm must actually embed the seed register"
+        # Suggestions exist for a near-miss name, yet resolution still abstains on it.
+        sugg = r4_api.suggest_candidates(conn, "Inflection", fake, min_similarity=0.0)
+        assert sugg, "embedding arm produced no suggestions"
+
+    reg_after = _register()
+    after_table = _r4_decision_table(reg_after)
+    after = _r4_metrics(reg_after)
+    assert after_table == before_table
+    for key in ("tp", "fp", "fn", "precision", "recall", "abstention", "sample_size"):
+        assert after[key] == before[key], key
+    assert after["fp"] == 0
+    assert _dec(_resolve("Inflection", register=reg_after)) == "abstain"
+
+
+def test_r4_mapping_log_suggested_candidates_only_with_embeddings(r4_db):
+    """Mapping rows carry suggested_candidates once embeddings exist; empty otherwise.
+
+    Abstained mentions list above-threshold neighbours; resolved ones list only
+    *other* entities. Decisions and canonical IDs are never rewritten.
+    Detects: suggestion auto-merging, self-suggestion, or non-empty column without embeddings.
+    """
+    from datetime import datetime, timezone
+
+    from signal_ingest.export.project import _mapping_rows
+    from signal_ingest.resolution import record_resolution_event
+    from signal_ingest.resolution.mapping import annotate_mapping_suggestions
+    from signal_ingest.storage import connect, create_run
+
+    reg = _register()
+    abstain = _resolve("Zephyr Quantum Robotics Labs", register=reg)
+    matched = _resolve("OpenAI", register=reg)
+    lonely = _resolve("DeepMind", register=reg)
+    assert _dec(abstain) == "abstain" and _dec(matched) == "match" and _dec(lonely) == "match"
+
+    as_of = datetime(2026, 11, 21, 12, 0, tzinfo=timezone.utc)
+    fake = r4_api.FakeEmbedder()
+
+    def rows(conn, run_id):
+        out = _mapping_rows(conn, run_id=run_id, as_of=as_of, lineage_mode="fixture")
+        return {r["rawName"]: r for r in out}
+
+    def decisions(conn):
+        return conn.execute(
+            "SELECT raw_name, decision, canonical_id, canonical_name FROM resolution_events "
+            "ORDER BY raw_name"
+        ).fetchall()
+
+    with connect(r4_db) as conn:
+        try:
+            for eid, name in R4_ENTITIES + (
+                ("fixture.startup.openai", "OpenAI"),
+                ("fixture.r4.openai-twin", "OpenAI"),
+                ("fixture.startup.google-deepmind", "Google DeepMind"),
+            ):
+                _r4_insert_entity(conn, eid, name)
+            run_id = create_run(conn, settings=r4_db)
+            for res in (abstain, matched, lonely):
+                record_resolution_event(conn, res, run_id=run_id)
+            conn.commit()
+
+            # No embeddings yet: annotate writes nothing, rows stay empty.
+            assert annotate_mapping_suggestions(conn, fake, run_id=run_id) == 0
+            before = decisions(conn)
+            plain = rows(conn, run_id)
+            assert set(plain) == {"Zephyr Quantum Robotics Labs", "OpenAI", "DeepMind"}
+            assert all(not r.get("suggested_candidates") for r in plain.values()), plain
+
+            r4_api.embed_entities(conn, fake)
+            assert annotate_mapping_suggestions(conn, fake, run_id=run_id) == 2
+            conn.commit()
+            after = decisions(conn)
+            got = rows(conn, run_id)
+        finally:
+            conn.rollback()
+            conn.execute("TRUNCATE resolution_events, source_identities, entities CASCADE")
+            conn.commit()
+
+    assert after == before, "suggestions must never change a mapping decision"
+
+    z = got["Zephyr Quantum Robotics Labs"]
+    assert z["decision"] == "abstain" and z["canonicalID"] is None
+    sugg = z["suggested_candidates"]
+    assert "Zephyr Quantum Robotics Labs (1.00)" in sugg, sugg
+    assert "Zephyr Quantum Robotics (0.87)" in sugg, sugg
+    assert "Bluefin" not in sugg
+
+    o = got["OpenAI"]
+    assert o["decision"] == "match" and o["canonicalID"] == "fixture.startup.openai"
+    # Self (canonical id) excluded; the same-named twin is the one other candidate.
+    assert o["suggested_candidates"].count("OpenAI (") == 1, o["suggested_candidates"]
+
+    d = got["DeepMind"]
+    assert d["decision"] == "match" and d["canonicalID"] == "fixture.startup.google-deepmind"
+    assert not d.get("suggested_candidates"), "no other candidate above threshold → empty"
+
+
+def test_r4_recursive_cte_papers_by_yc_startups_multi_hop(r4_db):
+    """paper -[IMPLEMENTED_BY]-> repo <-[OWNS]- ... <-[OWNS]- YC startup, incl. 2-hop chain.
+
+    Detects: single-hop-only CTE, non-YC owners leaking in, expired edges counted,
+    or an OWNS cycle hanging the recursion.
+    """
+    from uuid import uuid4
+
+    from signal_ingest.resolution import comparison_key
+    from signal_ingest.resolution.graph_queries import papers_by_yc_startups
+    from signal_ingest.storage import connect
+
+    yc, other = "fixture.r4.ycstart", "fixture.r4.nonyc"
+    edges = [
+        # 1-hop: P1 -> R1 <- YC
+        ("IMPLEMENTED_BY", "paper", "r4g-p1", "repository", "r4g-r1", None),
+        ("OWNS", "organization", yc, "repository", "r4g-r1", None),
+        # 2-hop: P2 -> R2 <- Sub <- YC (plus a Sub -> YC cycle)
+        ("IMPLEMENTED_BY", "paper", "r4g-p2", "repository", "r4g-r2", None),
+        ("OWNS", "organization", "r4g-sub", "repository", "r4g-r2", None),
+        ("OWNS", "organization", yc, "organization", "r4g-sub", None),
+        ("OWNS", "organization", "r4g-sub", "organization", yc, None),
+        # non-YC owner, direct and 2-hop
+        ("IMPLEMENTED_BY", "paper", "r4g-p3", "repository", "r4g-r3", None),
+        ("OWNS", "organization", other, "repository", "r4g-r3", None),
+        ("IMPLEMENTED_BY", "paper", "r4g-p4", "repository", "r4g-r4", None),
+        ("OWNS", "organization", "r4g-sub2", "repository", "r4g-r4", None),
+        ("OWNS", "organization", other, "organization", "r4g-sub2", None),
+        # YC ownership that already ended
+        ("IMPLEMENTED_BY", "paper", "r4g-p5", "repository", "r4g-r5", None),
+        ("OWNS", "organization", yc, "repository", "r4g-r5", "2020-01-01T00:00:00Z"),
+    ]
+    with connect(r4_db) as conn:
+        try:
+            for eid, name, sid in ((yc, "Zqx YC Robotics", "yc:r4-zqx"),
+                                   (other, "Zqx Other Robotics", "directory:r4-zqx-other")):
+                _r4_insert_entity(conn, eid, name)
+                conn.execute(
+                    """
+                    INSERT INTO source_identities (id, entity_id, namespace, identity_kind,
+                        raw_value, comparison_key, lineage_mode)
+                    VALUES (%s, %s, 'startup', 'source_id', %s, %s, 'fixture')
+                    """,
+                    (uuid4(), eid, sid, sid),
+                )
+            for rtype, fk, fkey, tk, tkey, valid_to in edges:
+                conn.execute(
+                    """
+                    INSERT INTO relationships (id, relation_type, from_kind, from_key,
+                        to_kind, to_key, valid_from, valid_to)
+                    VALUES (%s, %s, %s, %s, %s, %s, '2024-01-01T00:00:00Z', %s)
+                    """,
+                    (uuid4(), rtype, fk, fkey, tk, tkey, valid_to),
+                )
+            assert comparison_key("Zqx YC Robotics")
+            rows = [r for r in papers_by_yc_startups(conn) if str(r["paper_key"]).startswith("r4g-")]
+        finally:
+            conn.rollback()  # nothing committed: shared fixture DB left untouched
+
+    got = {r["paper_key"]: r for r in rows}
+    assert set(got) == {"r4g-p1", "r4g-p2"}, rows
+    assert got["r4g-p1"]["startup_entity_id"] == yc and got["r4g-p1"]["hops"] == 1
+    assert got["r4g-p1"]["repository_key"] == "r4g-r1"
+    assert got["r4g-p2"]["startup_entity_id"] == yc and got["r4g-p2"]["hops"] == 2
+    assert got["r4g-p2"]["repository_key"] == "r4g-r2"
+    assert got["r4g-p2"]["startup_name"] == "Zqx YC Robotics"
+
+
+def test_r4_resolver_cannot_read_embeddings():
+    """Structural guard: resolution decisions never import the embedding module."""
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[2] / "src" / "signal_ingest" / "resolution"
+    for name in ("resolve.py", "register.py", "normalize.py"):
+        text = (src / name).read_text(encoding="utf-8")
+        assert "embed" not in text.replace("embedded", ""), name

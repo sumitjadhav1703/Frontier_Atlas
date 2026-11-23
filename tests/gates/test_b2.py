@@ -1461,3 +1461,719 @@ async def test_r3c_two_papers_sharing_repo_both_get_stars_in_one_run(bulk_env, f
             conn.rollback()
     finally:
         await pool.aclose()
+
+
+# ---------------------------------------------------------------------------
+# B8 reopen: live acquisition paths (offline, loopback, FakeProvider)
+# Oracle: notes/b8-work-order.md "Sources" + "Code changes" and docs/contracts.md.
+# Imports stay inside each case so collection never depends on B8 code.
+# ---------------------------------------------------------------------------
+
+
+def _b8_raw_html(request_url: str, final_url: str, html: str):
+    import hashlib
+    from datetime import datetime, timezone
+
+    from signal_ingest.crawl.types import FetchOutcomeKind, RawObservation
+
+    body = html.encode("utf-8")
+    return RawObservation(
+        request_url=request_url,
+        final_url=final_url,
+        status_code=200,
+        outcome=FetchOutcomeKind.OK,
+        body=body,
+        content_type="text/html; charset=utf-8",
+        fetched_at=datetime(2026, 11, 21, 12, 0, 0, tzinfo=timezone.utc),
+        content_sha256=hashlib.sha256(body).hexdigest(),
+        metadata={"synthetic": True, "not_for_live_export": True},
+    )
+
+
+def _b8_tool(slug: str) -> dict[str, Any]:
+    return dict(next(t for t in load_bulk_json("agipicks_tools.json")["tools"] if t["slug"] == slug))
+
+
+def _b8_page(name: str) -> str:
+    return load_bulk_json("vendor_homepages.json")["pages"][name]
+
+
+async def _b8_maybe_await(value):
+    import inspect
+
+    return await value if inspect.isawaitable(value) else value
+
+
+async def _b8_fetch_listing(source_id: str, settings, url: str, pool, monkeypatch):
+    """Call live.bulk.fetch_bulk_listing against a loopback URL."""
+    import inspect
+
+    from signal_ingest.live import bulk as live_bulk
+
+    fn = live_bulk.fetch_bulk_listing
+    params = inspect.signature(fn).parameters
+    kwargs: dict[str, Any] = {}
+    if "pool" in params:
+        kwargs["pool"] = pool
+    if "url" in params:
+        kwargs["url"] = url
+    else:
+        # No URL override: point the documented endpoint table at loopback.
+        for spec in live_bulk.BULK_PILOTS.values():
+            if spec.get("adapter") == source_id:
+                monkeypatch.setitem(spec, "urls", [url])
+    out = await _b8_maybe_await(fn(source_id, settings, **kwargs))
+    rows = out.get("rows") if isinstance(out, dict) else out
+    return list(rows)
+
+
+@pytest.mark.asyncio
+async def test_b8_fetch_bulk_listing_one_get_rows_carry_listing_provenance(
+    bulk_env, frozen_clock, monkeypatch
+):
+    """One listing GET; every row is stamped _listing={url, sha256, fetched_at}."""
+    import hashlib
+
+    from signal_ingest.adapters.bulk import SOURCE_YC
+    from tests.integration.b2_listing_http import start_listing_server
+
+    companies = load_bulk_json("yc_companies.json")["page_a"]
+    body = json.dumps(companies).encode("utf-8")
+    server = start_listing_server({"/api/tags/ai.json": ("application/json", body)})
+    pool = http_pool()
+    try:
+        listing_url = server.url("/api/tags/ai.json")
+        rows = await _b8_fetch_listing(SOURCE_YC, bulk_env, listing_url, pool, monkeypatch)
+    finally:
+        await pool.aclose()
+        server.stop()
+
+    assert server.item_hits() == {"/api/tags/ai.json": 1}, server.hits
+    assert len(rows) == len(companies)
+    want_sha = hashlib.sha256(body).hexdigest()
+    for row in rows:
+        listing = row.get("_listing")
+        assert isinstance(listing, dict), f"row lacks _listing provenance: {row}"
+        assert listing.get("url") == listing_url
+        assert listing.get("sha256") == want_sha
+        assert listing.get("fetched_at")
+    assert {r["id"] for r in rows} == {c["id"] for c in companies}
+
+
+def _b8_listing(url: str) -> dict[str, Any]:
+    return {
+        "url": url,
+        "sha256": "b8" + "0" * 62,
+        "fetched_at": "2026-11-21T12:00:00+00:00",
+    }
+
+
+@pytest.mark.asyncio
+async def test_b8_live_row_shortcut_no_item_gets_for_yc_papers_openrouter(bulk_env, frozen_clock):
+    """Rows with _listing skip per-item GETs; evidence keeps the listing url + sha256."""
+    from signal_ingest.adapters.bulk import (
+        SOURCE_PAPERS,
+        SOURCE_YC,
+        STAGE_FETCH,
+        STAGE_PARSE,
+        discover_and_enqueue,
+        drain_bulk_once,
+    )
+    from signal_ingest.storage import connect
+    from tests.integration.b2_listing_http import start_listing_server
+
+    source_or = "bulk.openrouter"
+    server = start_listing_server({})  # any item GET is counted (404)
+    listing = _b8_listing("https://yc-oss.github.io/api/tags/ai.json")
+    yc_row = {
+        **load_bulk_json("yc_companies.json")["page_a"][0],
+        "url": server.url("/companies/aurora-labs"),
+        "_listing": listing,
+    }
+    hf = load_bulk_json("pwc_hf_rows.json")
+    paper = {**hf["papers_rows"]["rows"][0]["row"], "_listing": _b8_listing(
+        "https://datasets-server.huggingface.co/rows?dataset=pwc-archive/papers-with-abstracts")}
+    paper["paper_url"] = server.url("/paper/synthetic-joined-transformer")
+    link = {**hf["links_rows"]["rows"][0]["row"], "paper_url": paper["paper_url"]}
+    model = {**load_bulk_json("openrouter_models.json")["data"][2], "_listing": _b8_listing(
+        "https://openrouter.ai/api/v1/models")}
+
+    settings = bulk_env
+    run_id = _run(settings)
+    pool = http_pool()
+    cases = [
+        (SOURCE_YC, [yc_row], listing),
+        (SOURCE_PAPERS, {"papers": [paper], "links": [link]}, paper["_listing"]),
+        (source_or, {"data": [model]}, model["_listing"]),
+    ]
+    try:
+        with connect(settings) as conn:
+            for source_id, payload, want in cases:
+                enq = discover_and_enqueue(
+                    conn, source_id=source_id, payload=payload,
+                    partition="b8-short", run_id=run_id, revision="b8-short",
+                )
+                assert enq["created"] == 1, (source_id, enq)
+                fetch_r = await drain_bulk_once(
+                    conn, worker_id="b8-short-f", pool=pool, source_id=source_id,
+                    stage=STAGE_FETCH, settings=settings,
+                )
+                assert fetch_r is not None and fetch_r["ok"] is True, (source_id, fetch_r)
+                await drain_bulk_once(
+                    conn, worker_id="b8-short-p", pool=pool, source_id=source_id,
+                    stage=STAGE_PARSE, settings=settings,
+                )
+                obs = conn.execute(
+                    "SELECT metadata FROM observations WHERE source_id = %s", (source_id,)
+                ).fetchall()
+                cands = conn.execute(
+                    "SELECT evidence, payload FROM candidates WHERE source_id = %s", (source_id,)
+                ).fetchall()
+                trail = json.dumps([list(r) for r in obs] + [list(r) for r in cands], default=str)
+                assert want["url"] in trail and want["sha256"] in trail, (
+                    f"{source_id}: observation/candidate evidence must carry _listing "
+                    f"url+sha256; got {trail[:400]}"
+                )
+    finally:
+        await pool.aclose()
+        server.stop()
+    assert server.item_hits() == {}, f"row shortcut must not GET items: {server.hits}"
+
+
+@pytest.mark.asyncio
+async def test_b8_products_with_listing_still_get_vendor_homepage(bulk_env, frozen_clock):
+    """AgiPicks rows GET the vendor `website` once (owner evidence), never the agipicks page."""
+    from signal_ingest.adapters.bulk import (
+        SOURCE_PRODUCTS,
+        STAGE_FETCH,
+        STAGE_PARSE,
+        discover_and_enqueue,
+        drain_bulk_once,
+    )
+    from signal_ingest.storage import connect
+    from tests.integration.b2_listing_http import start_listing_server
+
+    server = start_listing_server(
+        {"/home/synth-paid/": ("text/html; charset=utf-8", b"")}
+    )
+    # Domain-first owner rule: the Organization url must sit on the (loopback) homepage domain.
+    page = _b8_page("jsonld_org").replace("https://synthpaid.example/", server.url("/"))
+    server.routes["/home/synth-paid/"] = ("text/html; charset=utf-8", page.encode())
+    tool = _b8_tool("synth-paid")
+    tool["website"] = server.url("/home/synth-paid/")
+    tool["_listing"] = _b8_listing("https://agipicks.com/data/tools.json")
+    settings = bulk_env
+    run_id = _run(settings)
+    pool = http_pool()
+    try:
+        with connect(settings) as conn:
+            enq = discover_and_enqueue(
+                conn, source_id=SOURCE_PRODUCTS, payload={"tools": [tool]},
+                partition="b8-home", run_id=run_id, revision="b8-home",
+            )
+            assert enq["created"] == 1
+            fetch_r = await drain_bulk_once(
+                conn, worker_id="b8-home-f", pool=pool, source_id=SOURCE_PRODUCTS,
+                stage=STAGE_FETCH, settings=settings,
+            )
+            assert fetch_r is not None and fetch_r["ok"] is True, fetch_r
+            parse_r = await drain_bulk_once(
+                conn, worker_id="b8-home-p", pool=pool, source_id=SOURCE_PRODUCTS,
+                stage=STAGE_PARSE, settings=settings,
+            )
+            assert parse_r is not None and parse_r["ok"] is True, parse_r
+            assert not parse_r.get("quarantined"), parse_r
+            cand = conn.execute(
+                "SELECT payload FROM candidates WHERE source_id = %s", (SOURCE_PRODUCTS,)
+            ).fetchone()
+    finally:
+        await pool.aclose()
+        server.stop()
+    assert server.item_hits() == {"/home/synth-paid/": 1}, server.hits
+    assert cand is not None
+    content = cand[0]["content"]
+    assert content["startupName"] == "Synth Widgets Corporation"
+    assert content["ownerEvidenceUrl"] == tool["website"]
+    assert content["pricingEvidenceUrl"] == tool["url"]
+
+
+# --- OpenRouter -------------------------------------------------------------
+
+
+def _b8_openrouter_parsed() -> dict[str, Any]:
+    from signal_ingest.adapters.bulk import openrouter as or_adapter
+
+    payload = load_bulk_json("openrouter_models.json")
+    items, _, _ = or_adapter.discover_from_payload({"data": payload["data"]})
+    out: dict[str, Any] = {}
+    for item in items:
+        row = (item.metadata or {}).get("row")
+        out[item.external_id] = (
+            item,
+            or_adapter.parse_observation(raw_json(item.url, {"row": row}), row=row),
+        )
+    return out
+
+
+def test_b8_openrouter_registered_as_bulk_source():
+    from signal_ingest.adapters.bulk import BULK_SOURCES, get_adapter
+    from signal_ingest.adapters.bulk import openrouter as or_adapter
+
+    assert or_adapter.SOURCE_ID == "bulk.openrouter"
+    assert "bulk.openrouter" in BULK_SOURCES
+    assert get_adapter("bulk.openrouter") is or_adapter
+
+
+def test_b8_openrouter_free_variant_collapses_and_pricing_tiers(frozen_clock):
+    """Product = base id; :free variants collapse; FREEMIUM/PAID/FREE by variant prices."""
+    parsed = _b8_openrouter_parsed()
+    assert "synthlab/orbit-7b:free" not in parsed
+    assert "fixture-ai/tiny-1b:free" not in parsed
+    assert {"synthlab/orbit-7b", "synthlab/lens-pro", "fixture-ai/tiny-1b"} <= set(parsed)
+
+    want = {
+        "synthlab/orbit-7b": ("FREEMIUM", "SynthLab"),
+        "synthlab/lens-pro": ("PAID", "SynthLab"),
+        "fixture-ai/tiny-1b": ("FREE", "Fixture AI"),
+    }
+    for base_id, (model, owner) in want.items():
+        _, result = parsed[base_id]
+        assert result.ok is True, (base_id, result.quarantine_reason)
+        assert result.record_type == "PRODUCT"
+        content = result.payload["content"]
+        assert content["pricingModel"] == model, base_id
+        assert content["startupName"] == owner, base_id
+        page = f"https://openrouter.ai/{base_id}"
+        assert content["ownerEvidenceUrl"] == page
+        assert content["pricingEvidenceUrl"] == page
+    assert parsed["synthlab/orbit-7b"][1].payload["content"]["productName"] == "Orbit 7B"
+    assert parsed["synthlab/lens-pro"][1].payload["content"]["productName"] == "Lens Pro"
+    # Two products of one owner count separately.
+    assert parsed["synthlab/orbit-7b"][1].eligible and parsed["synthlab/lens-pro"][1].eligible
+
+
+def test_b8_openrouter_name_without_owner_prefix_quarantined(frozen_clock):
+    parsed = _b8_openrouter_parsed()
+    _, result = parsed["anon/mystery-13b"]
+    assert result.ok is False
+    assert result.quarantine_reason == "missing_ownership_evidence"
+
+
+# --- AgiPicks owner from vendor homepage HTML ------------------------------
+
+
+def _b8_parse_tool(slug: str, page: str, *, final_url: str | None = None):
+    from signal_ingest.adapters.bulk import products as products_adapter
+
+    tool = _b8_tool(slug)
+    final = final_url or tool["website"]
+    raw = _b8_raw_html(tool["website"], final, _b8_page(page))
+    return tool, products_adapter.parse_observation(raw, row=tool)
+
+
+@pytest.mark.parametrize(
+    ("slug", "page", "owner"),
+    [
+        ("synth-paid", "jsonld_org", "Synth Widgets Corporation"),  # legalName wins
+        ("synth-free", "jsonld_org_name_only", "Synth Free Tools Ltd"),
+        ("synth-freemium", "graph_publisher", "Quill Systems GmbH"),  # @graph WebSite.publisher
+    ],
+)
+def test_b8_products_owner_from_json_ld(frozen_clock, slug, page, owner):
+    # Redirect within the vendor's own registrable domain (www + locale path).
+    final = _b8_tool(slug)["website"].replace("https://", "https://www.") + "en/"
+    tool, result = _b8_parse_tool(slug, page, final_url=final)
+    assert result.ok is True, result.quarantine_reason
+    content = result.payload["content"]
+    assert content["startupName"] == owner
+    assert content["ownerEvidenceUrl"] == final, "owner evidence = homepage final URL"
+    assert content["pricingEvidenceUrl"] == tool["url"], "pricing evidence = agipicks page"
+    assert content["productName"] == tool["name"]
+
+
+def test_b8_products_owner_from_footer_copyright(frozen_clock):
+    from signal_ingest.adapters.bulk import products as products_adapter
+
+    tool = _b8_tool("synth-paid")
+    raw = _b8_raw_html(tool["website"], tool["website"], _b8_page("footer_copyright"))
+    result = products_adapter.parse_observation(raw, row=tool)
+    assert result.ok is True, result.quarantine_reason
+    owner = result.payload["content"]["startupName"]
+    assert owner.startswith("Synth Labs"), owner
+    assert "2026" not in owner and "©" not in owner and "&copy;" not in owner
+    assert result.payload["content"]["ownerEvidenceUrl"] == tool["website"]
+
+
+def test_b8_products_no_owner_in_html_quarantined(frozen_clock):
+    _, result = _b8_parse_tool("synth-freemium", "no_owner")
+    assert result.ok is False
+    assert result.quarantine_reason == "missing_ownership_evidence"
+
+
+@pytest.mark.parametrize(
+    ("slug", "model"),
+    [("synth-freemium", "FREEMIUM"), ("synth-paid", "PAID"), ("synth-free", "FREE")],
+)
+def test_b8_agipicks_pricing_model_maps(frozen_clock, slug, model):
+    _, result = _b8_parse_tool(slug, "footer_copyright")
+    assert result.ok is True, result.quarantine_reason
+    assert result.payload["content"]["pricingModel"] == model
+
+
+@pytest.mark.parametrize("slug", ["synth-contact", "synth-oss"])
+def test_b8_agipicks_contact_sales_and_open_source_stay_quarantined(frozen_clock, slug):
+    """contracts.md: 'contact us' alone / an open-source label is insufficient evidence."""
+    from signal_ingest.adapters.bulk.mapping import classify_pricing
+
+    tool, result = _b8_parse_tool(slug, "footer_copyright")
+    assert result.ok is False
+    assert result.quarantine_reason == "missing_pricing_evidence"
+    assert classify_pricing(pricing=tool["pricingModel"], plans=[]) is None
+
+
+# --- Papers: join links x papers on paper_url -------------------------------
+
+
+def test_b8_papers_join_on_paper_url_keeps_only_matched(frozen_clock):
+    """Non-arXiv PwC rows join on paper_url; unmatched papers end as no_code_repo."""
+    from signal_ingest.adapters.bulk import papers as papers_adapter
+
+    hf = load_bulk_json("pwc_hf_rows.json")
+    papers = [r["row"] for r in hf["papers_rows"]["rows"]]
+    links = [r["row"] for r in hf["links_rows"]["rows"]]
+    items, _, _ = papers_adapter.discover_from_payload({"papers": papers, "links": links})
+
+    by_url = {(i.metadata or {}).get("row", {}).get("paper_url"): i for i in items}
+    joined_url = "https://paperswithcode.com/paper/synthetic-joined-transformer"
+    orphan_url = "https://paperswithcode.com/paper/synthetic-orphan-paper"
+    assert "https://paperswithcode.com/paper/some-paper-not-in-papers-rows" not in by_url
+
+    joined = by_url[joined_url]
+    edges = joined.metadata["repo_edges"]
+    assert [e["repo_url"] for e in edges] == ["https://github.com/synthetic-org/joined-transformer"]
+    ok = papers_adapter.parse_observation(
+        raw_json(joined.url, {"row": joined.metadata["row"]}),
+        row=joined.metadata["row"],
+        repo_edges=edges,
+    )
+    assert ok.ok is True, ok.quarantine_reason
+    assert ok.payload["content"]["github_url"].endswith("synthetic-org/joined-transformer")
+
+    orphan = by_url.get(orphan_url)
+    if orphan is not None:  # kept only to be quarantined, never counted
+        res = papers_adapter.parse_observation(
+            raw_json(orphan.url, {"row": orphan.metadata["row"]}),
+            row=orphan.metadata["row"],
+            repo_edges=orphan.metadata["repo_edges"],
+        )
+        assert res.ok is False
+        assert res.quarantine_reason == "no_code_repo"
+
+
+# --- LLM owner fallback (FakeProvider only) ---------------------------------
+
+
+async def _b8_llm_owner(page: str, claims: list[dict[str, Any]]):
+    """Run the products LLM owner fallback on vendor HTML with a scripted FakeProvider."""
+    import inspect
+
+    from signal_ingest.adapters.bulk import products as products_adapter
+    from signal_ingest.llm import FakeProvider, default_fake_limits
+
+    provider = FakeProvider(default_fake_limits())
+    provider.queue_json({"fields": claims})
+    tool = _b8_tool("synth-free")
+    raw = _b8_raw_html(tool["website"], tool["website"], _b8_page(page))
+    fn = products_adapter.llm_owner_fallback
+    params = inspect.signature(fn).parameters
+    kwargs: dict[str, Any] = {"provider": provider}
+    if "row" in params:
+        kwargs["row"] = tool
+    result = await _b8_maybe_await(fn(raw, **kwargs))
+    return tool, result, provider
+
+
+def _b8_seg(page: str, contains: str) -> str:
+    from signal_ingest.llm import html_to_segments
+
+    return next(s.segment_id for s in html_to_segments(_b8_page(page)) if contains in s.text)
+
+
+@pytest.mark.asyncio
+async def test_b8_llm_owner_fallback_accepts_grounded_owner(frozen_clock):
+    from signal_ingest.adapters.bulk import products as products_adapter
+
+    quote = "Synth Free is built and operated by Lantern Robotics."
+    claims = [
+        {"field": field, "value": "Lantern Robotics", "quote": quote,
+         "segment_ids": [_b8_seg("llm_grounded", "Lantern Robotics")]}
+        for field in ("owner_company", "owner")
+    ]
+    tool, owner, provider = await _b8_llm_owner("llm_grounded", claims)
+    assert provider.calls, "fallback must call the provider"
+    assert owner is not None
+    blob = owner if isinstance(owner, dict) else vars(owner)
+    assert blob.get("value") == "Lantern Robotics" or blob.get("owner") == "Lantern Robotics"
+    assert blob.get("method") == "llm"
+    assert blob.get("provider") and blob.get("model")
+    assert blob.get("url") == tool["website"]
+
+    # Feeding the accepted owner back into parse yields an evidenced product.
+    import inspect
+
+    params = inspect.signature(products_adapter.parse_observation).parameters
+    assert "llm_owner" in params, "parse_observation needs an llm_owner hook"
+    raw = _b8_raw_html(tool["website"], tool["website"], _b8_page("llm_grounded"))
+    result = products_adapter.parse_observation(raw, row=tool, llm_owner=owner)
+    assert result.ok is True, result.quarantine_reason
+    assert result.payload["content"]["startupName"] == "Lantern Robotics"
+    assert "llm" in json.dumps(result.evidence, default=str)
+
+
+@pytest.mark.asyncio
+async def test_b8_llm_owner_fallback_rejects_ungrounded_owner(frozen_clock):
+    """An owner the page never states (quote not in any segment) is not accepted."""
+    claims = [
+        {"field": field, "value": "Globex Holdings", "quote": "Globex Holdings owns Synth OSS.",
+         "segment_ids": [_b8_seg("no_owner", "best tool")]}
+        for field in ("owner_company", "owner")
+    ]
+    _, owner, provider = await _b8_llm_owner("no_owner", claims)
+    assert provider.calls
+    assert owner is None, f"ungrounded owner must not be accepted: {owner}"
+
+
+@pytest.mark.asyncio
+async def test_b8_papers_links_plus_openalex_listing(bulk_env, frozen_clock):
+    """Links /rows pages -> official arXiv+GitHub rows by versionless id -> one OpenAlex batch."""
+    from signal_ingest.adapters.bulk import papers as papers_adapter
+    from signal_ingest.adapters.bulk.mapping import versionless_arxiv_id
+    from signal_ingest.live.bulk import fetch_bulk_listing
+    from tests.integration.b2_listing_http import start_listing_server
+
+    fx = load_bulk_json("pwc_links_openalex.json")
+    ds = "links-between-paper-and-code"
+    routes = {
+        f"/rows/{ds}/{off}/100": ("application/json", json.dumps(page).encode())
+        for off, page in fx["links_pages"].items()
+    }
+    routes["/works"] = ("application/json", json.dumps(fx["openalex"]).encode())
+    server = start_listing_server(routes)
+    pool = http_pool()
+    try:
+        out = await fetch_bulk_listing(
+            "bulk.papers", bulk_env, pool=pool,
+            hf_rows_url=server.base_url + "/rows/{dataset}/{offset}/{length}",
+            openalex_url=server.url("/works"),
+            link_pages=20, target_papers=100,
+        )
+    finally:
+        await pool.aclose()
+        server.stop()
+
+    rows = {r["arxiv_id"]: r for r in out["rows"]}
+    # Unofficial, no-arXiv and non-GitHub links dropped; two edges on one id -> one paper.
+    assert set(rows) == {"2401.11111", "2404.44444", "2405.55555"}
+    edges = [l for l in out["links"] if versionless_arxiv_id(l.get("paper_arxiv_id")) == "2401.11111"]
+    assert sorted(e["repo_url"] for e in edges) == [
+        "https://github.com/synth-org/twin-a", "https://github.com/synth-org/twin-b"]
+
+    # Merged work: journal primary DOI, arXiv abs URL only in locations -> still matched.
+    merged = rows["2404.44444"]
+    assert not merged.get("_metadata_missing")
+    assert merged["title"] == "Synth Merged Journal" and merged["authors"] == ["H. Merger"]
+    assert not rows["2401.11111"].get("_metadata_missing")
+
+    missing = rows["2405.55555"]
+    assert missing.get("_metadata_missing") is True
+    res = papers_adapter.parse_observation(
+        raw_json(missing["paper_url"], {"row": missing}), row=missing,
+        repo_edges=[l for l in out["links"] if versionless_arxiv_id(l.get("paper_arxiv_id")) == "2405.55555"],
+    )
+    assert res.ok is False and res.quarantine_reason == "missing_paper_metadata"
+
+    for row in rows.values():
+        url = row["_listing"]["url"]
+        assert url.startswith(server.url("/works")), url
+        assert "mailto" not in url.lower() and "api_key" not in url.lower()
+        assert row["_listing"]["sha256"]
+    assert rows["2401.11111"]["repo_association_listings"] == [server.url(f"/rows/{ds}/0/100")]
+    assert rows["2404.44444"]["repo_association_listings"] == [server.url(f"/rows/{ds}/100/100")]
+
+    hits = server.item_hits()
+    for off in ("0", "100", "200"):
+        assert hits.get(f"/rows/{ds}/{off}/100") == 1, hits
+    assert hits.get("/works") == 1, hits
+    # Empty page 200 ends paging: no request beyond the first 10-page batch.
+    late = [p for p in hits if p.startswith("/rows/") and int(p.split("/")[3]) >= 1000]
+    assert late == [], late
+
+
+# --- B8 review regressions: false-positive owners --------------------------
+
+_B8_ACME_TOOL = {
+    "_synthetic": True,
+    "slug": "acme-notes",
+    "name": "Acme Notes",
+    "url": "https://agipicks.com/tools/acme-notes/",
+    "website": "https://acme.example/",
+    "category": "writing",
+    "pricingModel": "paid",
+    "freePlan": False,
+    "pricesCheckedAt": "2026-11-01",
+    "plans": [{"name": "Pro", "monthly": 10, "isFree": False}],
+}
+
+
+def _b8_acme(body: str, *, head: str = "", final_url: str = "https://acme.example/"):
+    from signal_ingest.adapters.bulk import products as products_adapter
+
+    html = f"<!doctype html><html><head><title>Acme Notes</title>{head}</head><body><h1>Acme Notes</h1>{body}</body></html>"
+    raw = _b8_raw_html(_B8_ACME_TOOL["website"], final_url, html)
+    return products_adapter.parse_observation(raw, row=dict(_B8_ACME_TOOL))
+
+
+def _b8_ld(obj: dict[str, Any]) -> str:
+    return f'<script type="application/ld+json">{json.dumps(obj)}</script>'
+
+
+@pytest.mark.parametrize(
+    ("case", "head", "body"),
+    [
+        ("react_license", "", "<script>/*! react-dom.production.min.js Copyright (c) Facebook, Inc. and its affiliates. */</script>"),
+        ("vercel_license", "", "<script>/** @license (c) 2023 Vercel Inc */ var x=1;</script>"),
+        ("copyright_law_prose", "", "<p>We respect copyright Law and DMCA requests here</p>"),
+        ("platform_footer", "", "<footer><p>© 2024 Webflow, Inc.</p></footer>"),
+        ("template_footer", "", "<footer><p>Copyright 2024 Template by ThemeForest</p></footer>"),
+        ("builder_author", _b8_ld({"@context": "https://schema.org", "@type": "WebPage", "name": "Acme Notes",
+                                    "author": {"@type": "Organization", "name": "Framer"}}), ""),
+    ],
+)
+def test_b8_owner_false_positives_rejected(frozen_clock, case, head, body):
+    result = _b8_acme(body, head=head)
+    assert result.ok is False, f"{case}: accepted owner {result.payload.get('content', {}).get('startupName')!r}"
+    assert result.quarantine_reason == "missing_ownership_evidence", case
+
+
+def test_b8_owner_widget_org_other_domain_rejected_footer_wins(frozen_clock):
+    head = _b8_ld({"@context": "https://schema.org", "@type": "Organization",
+                   "name": "Trustpilot", "url": "https://www.trustpilot.com"})
+    result = _b8_acme("<footer><p>© 2026 Acme Labs Inc.</p></footer>", head=head)
+    assert result.ok is True, result.quarantine_reason
+    owner = result.payload["content"]["startupName"]
+    assert owner.startswith("Acme Labs") and "Trustpilot" not in owner, owner
+
+
+def test_b8_owner_same_domain_json_ld_org_accepted(frozen_clock):
+    head = _b8_ld({"@context": "https://schema.org", "@type": "Organization",
+                   "name": "Acme Labs, Inc.", "url": "https://acme.example"})
+    result = _b8_acme("", head=head)
+    assert result.ok is True, result.quarantine_reason
+    assert result.payload["content"]["startupName"].startswith("Acme Labs")
+
+
+def test_b8_owner_footer_hyphenated_name_kept(frozen_clock):
+    result = _b8_acme("<footer><p>© 2026 Acme Co-pilot Ltd</p></footer>")
+    assert result.ok is True, result.quarantine_reason
+    assert result.payload["content"]["startupName"].startswith("Acme Co-pilot")
+
+
+def test_b8_owner_redirect_to_other_domain_quarantined(frozen_clock):
+    result = _b8_acme("<footer><p>© GoDaddy</p></footer>", final_url="https://parked.godaddy.example/")
+    assert result.ok is False
+    assert result.quarantine_reason == "owner_domain_mismatch"
+
+
+def test_b8_openrouter_dated_and_preview_variants_collapse(frozen_clock):
+    from signal_ingest.adapters.bulk import openrouter as or_adapter
+
+    price = {"prompt": "0.000001", "completion": "0.000002", "request": "0", "image": "0"}
+    data = [
+        {"id": "acme/model-x", "name": "Acme: Model X", "pricing": price},
+        {"id": "acme/model-x-2024-08-06", "name": "Acme: Model X (2024-08-06)", "pricing": price},
+        {"id": "acme/model-x-preview", "name": "Acme: Model X Preview", "pricing": price},
+    ]
+    items, _, _ = or_adapter.discover_from_payload({"data": data})
+    assert [i.external_id for i in items] == ["acme/model-x"], [i.external_id for i in items]
+
+
+def test_b8_recompute_export_counts_ignores_empty_lineage(tmp_path):
+    import csv
+
+    from signal_ingest.live.canary import recompute_export_counts
+
+    with (tmp_path / "Products.csv").open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=["durableIdentity", "source.url", "lineageMode"])
+        w.writeheader()
+        w.writerow({"durableIdentity": "p-live", "source.url": "https://a.example/", "lineageMode": "live"})
+        w.writerow({"durableIdentity": "p-blank", "source.url": "https://b.example/", "lineageMode": ""})
+        w.writerow({"durableIdentity": "p-fixture", "source.url": "https://c.example/", "lineageMode": "fixture"})
+    counts = recompute_export_counts(tmp_path)
+    assert counts["PRODUCT"] == 1, counts
+
+
+def _b8_vendor(website: str, product: str, *, head: str = "", body: str = ""):
+    from signal_ingest.adapters.bulk import products as products_adapter
+
+    tool = {**_B8_ACME_TOOL, "slug": product.lower().replace(" ", "-"), "name": product, "website": website}
+    html = (f"<!doctype html><html><head><title>{product}</title>{head}</head>"
+            f"<body><h1>{product}</h1>{body}</body></html>")
+    return products_adapter.parse_observation(_b8_raw_html(website, website, html), row=tool)
+
+
+def _b8_org(name: str, url: str | None = None) -> str:
+    node: dict[str, Any] = {"@context": "https://schema.org", "@type": "Organization", "name": name}
+    if url:
+        node["url"] = url
+    return _b8_ld(node)
+
+
+@pytest.mark.parametrize(
+    ("case", "website", "product", "head", "body"),
+    [
+        ("third_party_org_token_ai", "https://jasper.ai/", "Jasper AI", _b8_org("Stability AI", "https://stability.ai"), ""),
+        ("brand_named_in_product", "https://gptwrap.io/", "OpenAI GPT Wrapper", _b8_org("OpenAI", "https://openai.com"), ""),
+        ("urlless_widget_org", "https://getacme.com/", "Acme", _b8_org("Get Satisfaction"), ""),
+        ("urlless_generic_token", "https://acme.example/", "Acme Writer", _b8_org("Writer Inc"), ""),
+        ("payment_vendor_org", "https://stripeflow.app/", "StripeFlow", _b8_org("Stripe", "https://stripe.com"), ""),
+        ("footer_other_ai_brand", "https://jasper.ai/", "Jasper AI", "", "<footer><p>© 2024 Anthropic AI</p></footer>"),
+    ],
+)
+def test_b8_owner_domain_first_rejects_foreign_orgs(frozen_clock, case, website, product, head, body):
+    result = _b8_vendor(website, product, head=head, body=body)
+    assert result.ok is False, f"{case}: accepted owner {result.payload.get('content', {}).get('startupName')!r}"
+    assert result.quarantine_reason == "missing_ownership_evidence", case
+
+
+@pytest.mark.parametrize(
+    ("website", "product", "head", "body", "owner"),
+    [
+        ("https://plutio.com/", "Plutio", "", "<footer><p>© 2026 Plutio Ltd</p></footer>", "Plutio"),
+        ("https://usebruno.com/", "Bruno", _b8_org("Bruno Software Inc.", "https://www.usebruno.com"), "", "Bruno Software"),
+    ],
+)
+def test_b8_owner_domain_first_positive_controls(frozen_clock, website, product, head, body, owner):
+    result = _b8_vendor(website, product, head=head, body=body)
+    assert result.ok is True, result.quarantine_reason
+    assert result.payload["content"]["startupName"].startswith(owner)
+
+
+@pytest.mark.parametrize(
+    ("raw", "clean"),
+    [
+        ("AI Detector Pro, a product of AI Detector Pro LLC", "AI Detector Pro LLC"),
+        ("CloudTalk - AI Call Center Software", "CloudTalk"),
+        ("Datadog 2026", "Datadog"),
+        ("Final Round AI, 165 Page St, San Francisco, CA, 94102", "Final Round AI"),
+        ("Copyright 2026 iClosed", "iClosed"),
+        ("Sbl.so | AI SDR for LinkedIn Outreach &amp; Meetings", "Sbl.so"),
+        ("Jobholler™", "Jobholler"),
+        ("Bruno Software Inc.", "Bruno Software Inc."),
+        ("521 Products Pty Ltd", "521 Products Pty Ltd"),
+    ],
+)
+def test_b8_owner_name_cleanup_from_live_noise(raw, clean):
+    """Owner strings seen in the live dry run lose title/address/year noise only."""
+    from signal_ingest.adapters.bulk.mapping import clean_owner_name
+
+    assert clean_owner_name(raw) == clean

@@ -1,61 +1,106 @@
-# Architecture source (B9 scaffold)
+# AI Signal ingestion: architecture (3 pages)
 
-This draft feeds `architecture.pdf` (≤3 pages). **All live measurements remain PENDING until B8 closes and a release cutoff exists.** Synthetic bench figures are labeled and must not be cited as live scrape throughput. Do not invent ≥1000 row counts or live RPS/token numbers.
+Source for `architecture.pdf` (render: `signal-ingest render-pdf`). Each `## Page N` heading starts a new PDF page. Every `{{TODO_MEASURED: ...}}` marks a number that must come from a captured artifact; none are estimated here.
 
-## Page 1 · Pipeline topology and scale
+## Page 1 · Pipeline topology and 500k projection
 
-**Topology.** Sources → discover → PostgreSQL task queue (`FOR UPDATE SKIP LOCKED` leases + fencing) → async HTTPX fetch pool → content-addressed raw store (`content_key` under a shared mode-scoped root) → parse / enrich → candidates + relationships → grounded LLM extract → deterministic resolution → six-tab export projection.
+### Topology
 
-**Adapters.** Bulk: YC, products, papers, arXiv, GitHub metrics. Monitors: five news + five job boards. Workers share one DB and one mounted raw root; temporary working directories may differ. A second worker reopens an observation using only the persisted relative `content_key`.
+Sources → discover → PostgreSQL task queue (`FOR UPDATE SKIP LOCKED` leases with fencing tokens) → bounded async HTTPX pool → content-addressed raw store (`content_key` under one mode-scoped root) → parse / enrich → candidates and typed relationships → grounded LLM extraction → deterministic entity resolution → six-tab export (CSV + `.xlsx` snapshot, imported into a view-only Google Sheet).
 
-**500k projection (formula; live coefficients PENDING).**
+- **Bulk adapters:** YC directory, AI product directory, paper/repo archive, arXiv, GitHub metrics (star snapshot per refresh interval).
+- **Monitors:** five news sources and five job boards, each with a per-source run ledger, watermark and pagination-termination record.
+- **Bounded workers:** N slots per process; global active and pending caps, per-origin concurrency 2 and 50 ms pace; body size caps; heartbeat lease renewal and a reaper for dead workers.
+- **Shared state:** workers share one database and one mounted raw root. A second worker reopens an observation from its persisted `content_key` alone.
+
+### Measured throughput (loopback fixture benchmark)
+
+Source: `artifacts/gates/b7_benchmark.json`, mode `fixture_loopback`: a local HTTP fixture server driven through the real `work` loop and PostgreSQL queue. This is not web-scrape throughput.
+
+| Run | Workers | Tasks/s | p95 fetch ms | Bytes/item |
+| --- | --- | --- | --- | --- |
+| 1k | 1 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
+| 1k | 4 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
+| 10k | 1 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
+| 10k | 4 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
+
+### 500k projection
 
 \[
-T \ge \max\!\left(\frac{W_{\text{stage}}}{\theta_{\text{eff}}},\; T_{\text{rate-limited requests}},\; T_{\text{provider tokens}}\right)
+T(500k) >= max( W_stage / theta_eff,
+               N_requests / R_source_limit,
+               N_tokens / R_provider_tokens ) + T_cold_start
 \]
 
-Include cold start, rejection yield, and retries. Raw storage ≈ measured compressed bytes/item × candidates + indexes + retention. More workers help until source/provider limits dominate.
+- **Local pipeline bound:** 500k ÷ {{TODO_MEASURED: 4-worker tasks/s}} = {{TODO_MEASURED: hours}}.
+- **Upstream bound:** per-source published limits × live yield {{TODO_MEASURED: accepted/fetched per class}}; retries add {{TODO_MEASURED: retry rate}}.
+- **Provider bound:** {{TODO_MEASURED: LLM-eligible share}} × tokens/item ÷ free-tier daily token quota.
+- **Raw storage:** {{TODO_MEASURED: compressed bytes/item}} × 500k + indexes + retention = {{TODO_MEASURED: GB}}.
+- Scope: 500k candidates per class or in total, as stated with the measured coefficients. More workers help until the source or provider limit dominates.
 
-| Item | Status |
+## Page 2 · Budgets, 413/429 and the provider chain
+
+### Byte and token arithmetic
+
+\[
+allowable_input = context_window - reserved_output
+                  - (instructions + schema + framing) - safety_margin
+\]
+
+The allowable input is further capped by the provider's input-per-request limit and by the transport byte cap of the fully serialized request. Tool and schema overhead count once. Chunks split by semantic section, then paragraph, then safe boundaries, keeping evidence offsets and overlap. Each fallback recounts the final payload for that provider.
+
+| Provider tier | Context | Max input | Reserved output | Daily quota |
+| --- | --- | --- | --- | --- |
+| Gemini (free) | {{TODO_MEASURED: from console}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} |
+| Groq (free) | {{TODO_MEASURED: from console}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} |
+| Ollama (local) | {{TODO_MEASURED: model card}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} | local |
+
+### Fallback states: 413 and 429
+
+| Signal | Behavior |
 | --- | --- |
-| Synthetic 1k/10k × 1/4 workers | See `artifacts/gates/b7_benchmark.json` (**synthetic**) |
-| Live bytes/item, yield, request RPS | **PENDING live evidence (B8)** |
-| Live ≥1000 accepted / bulk class | **PENDING** (pilots only; see `b8_blocker.json`) |
-| Optional 500k synthetic stress | Not default; never label as web scrape |
+| 413 / context-length 400 | Re-budget and split smaller; strict max depth and minimum chunk; never resend unchanged bytes |
+| 429 with Retry-After | Persist `next_attempt` at the server time or fall over to the next tier; never shorten a cooldown |
+| 429 / 5xx without guidance | Full jitter in [0, min(cap, base × 2^attempt)], bounded attempts and wall clock across tiers |
+| 401/403 credential | Disable tier for the run (not a quota event) |
+| Quota exhausted | Deny dispatch before the call; abstain or queue |
+| Circuit open | Shared durable cooldown; one half-open probe |
 
-## Page 2 · LLM budgets, 413/429, circuits
+### LiteLLM Router and LangGraph chain
 
-**Budget arithmetic.** Allowable input = context − reserved output − instructions/schema/framing − safety margin; also capped by provider input-per-request and serialized transport bytes. Split by section→paragraph; recount on each fallback.
+LangGraph extraction graph: `budget → segment → cache_lookup → plan → call_llm (⇄ rebudget) → merge → finalize`. `call_llm` goes through a LiteLLM Router chain Gemini → Groq → optional Ollama, with paid spend cap 0.
 
-**Fallback.** Gemini → Groq → optional Ollama. Parse Retry-After; full jitter otherwise. Shared durable cooldown + circuit breaker (one half-open probe). Paid spend cap = 0 offline; replay/fake ≠ live qualification.
+**Quota hook.** A Router `CustomLogger` reserves requests and tokens in the shared quota store before every dispatch (`async_pre_call_check`). It refuses unreserved dispatch, raises a context error when the measured request exceeds the tier limit, and turns a quota denial into a Router rate-limit so the tier cools down and the chain falls over. It also checks that the Router did not rewrite the grounded messages.
 
-**Example trace.** Offline fake-provider transcripts under B4/B5 gates. **Live redacted trace: PENDING B8** (no free keys / Ollama unreachable at last qualification).
+**Example trace (redacted).** {{TODO_MEASURED: live trace id, tier sequence, tokens, latency from captured transcript}}
 
-| Hard limit | Behavior |
+## Page 3 · Identity, freshness, storage and results
+
+### Leases, idempotency and self-healing
+
+- Semantic task keys with unique constraints make duplicate discovery a no-op. One observation per task (`UNIQUE(task_id)`).
+- Lease fencing tokens: a stale worker cannot commit after its lease is reclaimed. A crash after the blob write and before commit reuses the content hash.
+- Self-healing: heartbeat renewal, reaper (retry or dead-letter at max attempts), pooled connections replaced when dropped, backoff on DB errors, SIGTERM drains in-flight work.
+- Measured recovery: {{TODO_MEASURED: kill -9 restart time and committed-effect count}}.
+
+### Freshness
+
+Export cutoff T. A news or job row is admitted only if its whole publication interval lies within [T − 24h, T]. Original structured dates are preferred; conflicts go to quarantine. Release cutoff: {{TODO_MEASURED: UTC and IST}}. Star snapshot age: {{TODO_MEASURED: hours at cutoff}}.
+
+### Storage trade-offs
+
+- **PostgreSQL** holds exact identity, metrics history, leases and typed, time-bounded relationship edges (`OWNS`, `IMPLEMENTED_BY`, `ALIASED_AS` ...).
+- **pgvector** (384-dim HNSW on entities) only proposes resolution candidates. Deterministic rules decide merges, so an embedding never causes a false merge.
+- A separate graph database or vector service was not adopted: the sync and recovery cost outweighs the multi-hop queries this dataset needs.
+
+### Results and gaps
+
+| Item | Value |
 | --- | --- |
-| 413 / context 400 | Re-budget + smaller split (bounded depth) |
-| 429 | Honor server delay; never shorten cooldown |
-| Quota exhausted | Deny dispatch; abstain or queue |
+| Rows per tab at release | {{TODO_MEASURED: six tab counts}} |
+| Bulk classes ≥ 1,000 rows | {{TODO_MEASURED}} |
+| Entity resolution precision / recall | {{TODO_MEASURED: from b6_metrics.json and live register}} |
+| Grounded LLM rows | {{TODO_MEASURED: count and traced example}} |
+| Source scans complete / partial | {{TODO_MEASURED}} |
 
-## Page 3 · Identity, freshness, storage trade-offs
-
-**Distributed identity.** Semantic task keys + unique constraints; lease fencing tokens; idempotent candidate upserts; resolution observation keys. Crash after blob write / before commit reuses content hash; stale fences cannot commit.
-
-**Freshness.** Export cutoff \(T\); admit signals iff entire publication interval ⊆ \([T-24h, T]\). Prefer original structured dates; quarantine conflicts. Release cutoff UTC/IST: **PENDING** until B9 refresh after B8.
-
-**Storage.** PostgreSQL for exact identity, metrics history, leases, and relational edges (`OWNS`, `IMPLEMENTED_BY`). Optional pgvector for candidate recall or Neo4j for multi-hop graphs would add sync/recovery cost — trial keeps exact store in Postgres.
-
-**Known gaps / trial status.** Offline B0–B7 PASS. B8 BLOCKED: no live LLM canary, no ≥1000 live export, seeds 30/50. Public Sheet read-back and signed-out viewer checks: **PENDING** (`workbook_id` null). Fixture exports remain segregated and labeled `not_for_live_export`.
-
-## Replay (fixture)
-
-```bash
-signal-ingest --mode fixture init-db
-RUN=$(signal-ingest --mode fixture crawl --source bulk.yc | python3 -c 'import sys,json; print(json.load(sys.stdin)["run_id"])')
-signal-ingest --mode fixture work --stage fetch --run "$RUN" --worker-id w1
-signal-ingest --mode fixture work --stage parse --run "$RUN" --worker-id w2
-signal-ingest --mode fixture resume --run "$RUN"
-signal-ingest --mode fixture audit --run "$RUN"
-signal-ingest --mode fixture export --run "$RUN" --as-of 2026-11-21T12:00:00Z
-signal-ingest --mode fixture bench
-```
+**Known gaps.** {{TODO_MEASURED: sources blocked or partial, unresolved fresh items with reasons}}.

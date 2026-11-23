@@ -264,7 +264,62 @@ def record_mapping_event(
             conn.close()
 
 
+_UNRESOLVED_DECISIONS = ("abstain", "unresolved")
+
+
+def annotate_mapping_suggestions(
+    conn: psycopg.Connection,
+    embedder: Any,
+    *,
+    run_id: UUID | str | None = None,
+    k: int = 3,
+    min_similarity: float = 0.85,
+) -> int:
+    """Write payload.suggested_candidates on mapping events; decisions are untouched.
+
+    Abstained/unresolved mentions get any above-threshold candidate; resolved ones
+    only list other entities (their canonical_id is excluded). Returns rows annotated.
+    """
+    from signal_ingest.resolution.embed import format_suggestions, suggest_candidates
+
+    params: list[Any] = []
+    where = ""
+    if run_id is not None:
+        where = "WHERE run_id = %s"
+        params.append(str(run_id))
+    events = conn.execute(
+        f"SELECT id, entity_type, raw_name, decision, canonical_id FROM resolution_events {where}",
+        params,
+    ).fetchall()
+    annotated = 0
+    for event_id, entity_type, raw_name, decision, canonical_id in events:
+        suggestions = suggest_candidates(
+            conn,
+            raw_name,
+            embedder=embedder,
+            k=k,
+            min_similarity=min_similarity,
+            exclude_entity_id=None if decision in _UNRESOLVED_DECISIONS else canonical_id,
+            namespace=entity_type,
+        )
+        text = format_suggestions(suggestions)
+        if text:
+            conn.execute(
+                "UPDATE resolution_events SET payload = payload || jsonb_build_object("
+                "'suggested_candidates', %s::text) WHERE id = %s",
+                (text, event_id),
+            )
+            annotated += 1
+        else:
+            conn.execute(
+                "UPDATE resolution_events SET payload = payload - 'suggested_candidates' WHERE id = %s",
+                (event_id,),
+            )
+    return annotated
+
+
 __all__ = [
+    "annotate_mapping_suggestions",
     "decision_to_mapping_log",
     "mapping_event_key",
     "mapping_observation_key",

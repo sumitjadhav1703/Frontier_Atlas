@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B8 papers: HF datasets-server rows join on paper_url (links-between-paper-and-code x papers-with-abstracts)",
+    "review_date": "2026-11-22",
+    "not_for_live_export": true,
+    "modeled_on": "datasets-server.huggingface.co /rows for pwc-archive datasets"
+  },
+  "papers_rows": {
+    "rows": [
+      {"row_idx": 0, "row": {"paper_url": "https://paperswithcode.com/paper/synthetic-joined-transformer", "arxiv_id": null, "title": "Synthetic Joined Transformer", "abstract": "Fixture abstract.", "authors": ["C. Joiner", "D. Matcher"], "date": "2024-03-04", "url_abs": "https://openreview.net/forum?id=synthJ01", "url_pdf": "https://openreview.net/pdf?id=synthJ01"}, "truncated_cells": []},
+      {"row_idx": 1, "row": {"paper_url": "https://paperswithcode.com/paper/synthetic-orphan-paper", "arxiv_id": null, "title": "Synthetic Orphan Paper", "abstract": "Fixture abstract.", "authors": ["E. Lonely"], "date": "2024-05-06", "url_abs": "https://openreview.net/forum?id=synthO02", "url_pdf": "https://openreview.net/pdf?id=synthO02"}, "truncated_cells": []}
+    ]
+  },
+  "links_rows": {
+    "rows": [
+      {"row_idx": 0, "row": {"paper_url": "https://paperswithcode.com/paper/synthetic-joined-transformer", "paper_title": "Synthetic Joined Transformer", "paper_arxiv_id": null, "paper_url_abs": "https://openreview.net/forum?id=synthJ01", "paper_url_pdf": "https://openreview.net/pdf?id=synthJ01", "repo_url": "https://github.com/synthetic-org/joined-transformer", "is_official": true, "mentioned_in_paper": true, "mentioned_in_github": true, "framework": "pytorch"}, "truncated_cells": []},
+      {"row_idx": 1, "row": {"paper_url": "https://paperswithcode.com/paper/some-paper-not-in-papers-rows", "paper_title": "Unlisted", "paper_arxiv_id": null, "paper_url_abs": null, "paper_url_pdf": null, "repo_url": "https://github.com/synthetic-org/unlisted", "is_official": true, "mentioned_in_paper": false, "mentioned_in_github": true, "framework": "none"}, "truncated_cells": []}
+    ]
+  }
+}

@@ -1,167 +1,185 @@
-"""Render ≤3-page architecture.pdf from page text (no external PDF dependency)."""
+"""Render docs/architecture-source.md to architecture.pdf (≤3 pages) with reportlab."""
 
 from __future__ import annotations
 
 import hashlib
+import io
+import re
+import textwrap
 from pathlib import Path
-from typing import Final, Sequence
+from typing import Final
+from xml.sax.saxutils import escape
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    ListFlowable,
+    ListItem,
+    PageBreak,
+    Paragraph,
+    Preformatted,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 ARCHITECTURE_PDF_PATH: Final = Path("architecture.pdf")
 ARCHITECTURE_SOURCE_PATH: Final = Path("docs/architecture-source.md")
+MAX_PAGES: Final = 3
 
-# Helvetica ASCII-safe lines; keep short for legibility on Letter page.
-PAGE_TEXTS: Final[tuple[tuple[str, ...], ...]] = (
-    (
-        "AI Signal architecture.pdf (<=3 pages)",
-        "Page 1 · Pipeline topology and 500k projection",
-        "",
-        "Sources -> discover -> PG queue/leases -> HTTPX pool",
-        "-> shared raw store (content_key) -> parse/enrich",
-        "-> grounded LLM extract -> resolve -> six-tab export.",
-        "Bulk: YC, products, papers, arXiv, GitHub. Monitors: 5+5.",
-        "Dual workers: same Postgres + mounted raw root.",
-        "",
-        "500k projection (formula; coefficients PENDING live):",
-        "T >= max(stage_work/theta_eff, rate limits, token time).",
-        "Storage ~= compressed_bytes/item x candidates + indexes.",
-        "",
-        "Synthetic 1k/10k: artifacts/gates/b7_benchmark.json",
-        "(labeled synthetic — NOT live scrape throughput).",
-        "LIVE bytes/item, yield, RPS: PENDING (B8/B9).",
-    ),
-    (
-        "Page 2 · Byte/token budgets, 413/429, circuits",
-        "",
-        "Allowable input = context - reserved output - framing",
-        "- safety margin; also provider input + transport caps.",
-        "Split section->paragraph; recount on each fallback.",
-        "Fallback: Gemini -> Groq -> optional Ollama.",
-        "429: honor Retry-After; never shorten server cooldown.",
-        "413 / context 400: re-budget + smaller split (bounded).",
-        "Quota exhausted: deny dispatch; abstain or queue.",
-        "Paid spend cap = 0 offline; fake != live qualification.",
-        "",
-        "Offline fake traces: B4/B5 gates.",
-        "LIVE redacted provider trace: PENDING B8 unlock.",
-        "Measured live token/latency numbers: PENDING.",
-    ),
-    (
-        "Page 3 · Identity, freshness, storage trade-offs",
-        "",
-        "Semantic task keys, fencing tokens, idempotent upserts.",
-        "Freshness: publication interval subset of [T-24h, T].",
-        "Postgres for identity, metrics history, leases, edges.",
-        "Optional vector/graph stores deferred (sync cost).",
-        "Fixture exports segregated + not_for_live_export.",
-        "",
-        "Trial results: offline B0-B7 PASS; B8 BLOCKED",
-        "(no free LLM keys/Ollama; no live >=1000 export).",
-        "KNOWN GAPS / PENDING: live yield, canary lineage,",
-        "public Sheet read-back, signed-out viewer checks.",
-        "Do not invent measurements. Source: architecture-source.md",
-    ),
+# Built-in Type1 fonts only cover WinAnsi; map the symbols the source uses.
+_SYMBOLS: Final = str.maketrans(
+    {"→": "->", "←": "<-", "⇄": "<->", "≤": "<=", "≥": ">=", "−": "-", "≈": "~",
+     "⊆": "within", "θ": "theta", "≠": "!="}
 )
 
+_BASE = getSampleStyleSheet()
+_BODY = ParagraphStyle("body", parent=_BASE["BodyText"], fontName="Helvetica",
+                       fontSize=9, leading=11.2, spaceAfter=3, alignment=TA_LEFT)
+_CELL = ParagraphStyle("cell", parent=_BODY, fontSize=8, leading=9.6, spaceAfter=0)
+_STYLES: Final = {
+    1: ParagraphStyle("h1", parent=_BODY, fontName="Helvetica-Bold", fontSize=14,
+                      leading=17, spaceAfter=4),
+    2: ParagraphStyle("h2", parent=_BODY, fontName="Helvetica-Bold", fontSize=12,
+                      leading=15, spaceBefore=2, spaceAfter=4,
+                      textColor=colors.HexColor("#1f3a5f")),
+    3: ParagraphStyle("h3", parent=_BODY, fontName="Helvetica-Bold", fontSize=10,
+                      leading=12.5, spaceBefore=5, spaceAfter=2),
+}
+_CODE = ParagraphStyle("code", parent=_BODY, fontName="Courier", fontSize=8, leading=9.6,
+                       backColor=colors.HexColor("#f3f3f3"), borderPadding=3,
+                       spaceBefore=2, spaceAfter=5)
 
-def _escape_pdf_string(text: str) -> str:
-    return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
-
-def _page_content_stream(lines: Sequence[str]) -> bytes:
-    # Text object with leading; each line advances via T* after first Td.
-    parts = ["BT", "/F1 11 Tf", "14 TL", "50 750 Td"]
-    for i, line in enumerate(lines):
-        esc = _escape_pdf_string(line)
-        if i == 0:
-            parts.append(f"({esc}) Tj")
+def _inline(text: str) -> str:
+    """Markdown inline (`code`, **bold**) to reportlab mini-markup; escapes the rest."""
+    out = []
+    for i, part in enumerate(re.split(r"(`[^`]*`)", text.translate(_SYMBOLS))):
+        if i % 2:
+            out.append(f'<font face="Courier">{escape(part[1:-1])}</font>')
         else:
-            parts.append("T*")
-            parts.append(f"({esc}) Tj")
-    parts.append("ET")
-    return "\n".join(parts).encode("latin-1", errors="replace")
+            out.append(re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", escape(part)))
+    return "".join(out)
+
+
+def _table(lines: list[str], width: float) -> Table:
+    rows = [[c.strip() for c in ln.strip().strip("|").split("|")] for ln in lines]
+    rows = [r for r in rows if not all(re.fullmatch(r":?-{3,}:?", c) for c in r)]
+    ncols = max(len(r) for r in rows)
+    data = [
+        [Paragraph(("<b>%s</b>" if ri == 0 else "%s") % _inline(c), _CELL) for c in r]
+        + [""] * (ncols - len(r))
+        for ri, r in enumerate(rows)
+    ]
+    t = Table(data, colWidths=[width / ncols] * ncols, repeatRows=1, hAlign="LEFT")
+    t.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e6ecf3")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    return t
+
+
+def markdown_flowables(source: str, width: float) -> list:
+    """Parse the small Markdown subset used by architecture-source.md."""
+    lines = source.splitlines()
+    flow: list = []
+    seen_page = False
+    i = 0
+
+    def take(pred) -> list[str]:
+        nonlocal i
+        block = []
+        while i < len(lines) and pred(lines[i]):
+            block.append(lines[i])
+            i += 1
+        return block
+
+    while i < len(lines):
+        line = lines[i]
+        s = line.strip()
+        if not s:
+            i += 1
+        elif s.startswith("```"):
+            i += 1
+            code = take(lambda ln: not ln.strip().startswith("```"))
+            i += 1
+            flow.append(Preformatted("\n".join(code).translate(_SYMBOLS), _CODE))
+        elif s.startswith("\\["):
+            i += 1
+            math = take(lambda ln: not ln.strip().startswith("\\]"))
+            i += 1
+            flow.append(Preformatted(textwrap.dedent("\n".join(math)).strip("\n").translate(_SYMBOLS),
+                                     _CODE))
+        elif m := re.match(r"(#{1,3})\s+(.*)", s):
+            level = len(m.group(1))
+            if level == 2 and m.group(2).startswith("Page"):
+                if seen_page:
+                    flow.append(PageBreak())
+                seen_page = True
+            flow.append(Paragraph(_inline(m.group(2)), _STYLES[level]))
+            i += 1
+        elif s.startswith("|"):
+            flow.append(_table(take(lambda ln: ln.strip().startswith("|")), width))
+            flow.append(Spacer(1, 4))
+        elif re.match(r"[-*]\s+", s):
+            items = [re.sub(r"^[-*]\s+", "", b.strip())
+                     for b in take(lambda ln: re.match(r"\s*[-*]\s+", ln) is not None)]
+            flow.append(ListFlowable(
+                [ListItem(Paragraph(_inline(t), _BODY), leftIndent=10) for t in items],
+                bulletType="bullet", start="•", leftIndent=10, bulletFontSize=7,
+            ))
+        else:
+            para = take(lambda ln: ln.strip() != "" and not re.match(
+                r"\s*(#{1,3}\s|```|\||[-*]\s|\\\[)", ln))
+            flow.append(Paragraph(_inline(" ".join(p.strip() for p in para)), _BODY))
+    return flow
+
+
+def count_pdf_pages(path_or_bytes: Path | str | bytes) -> int:
+    """Count page objects (/Type /Page, not /Pages)."""
+    data = path_or_bytes if isinstance(path_or_bytes, bytes) else Path(path_or_bytes).read_bytes()
+    return len(re.findall(rb"/Type\s*/Page(?!\s*s)", data))
 
 
 def render_architecture_pdf(
     path: Path | str = ARCHITECTURE_PDF_PATH,
-    pages: Sequence[Sequence[str]] = PAGE_TEXTS,
+    source: Path | str = ARCHITECTURE_SOURCE_PATH,
 ) -> Path:
-    """Write a 3-page PDF stub with PENDING live measurement markers."""
+    """Render the Markdown source; refuse to write a PDF over MAX_PAGES pages."""
     out = Path(path)
-    if not out.is_absolute():
-        out = Path.cwd() / out
-    if len(pages) > 3:
-        raise ValueError("architecture.pdf must be ≤3 pages")
-    if len(pages) < 1:
-        raise ValueError("at least one page required")
-
-    streams = [_page_content_stream(p) for p in pages]
-    # Object layout: 1 Catalog, 2 Pages, 3..N Page, then contents, then font.
-    n_pages = len(pages)
-    page_obj_ids = list(range(3, 3 + n_pages))
-    content_obj_ids = list(range(3 + n_pages, 3 + 2 * n_pages))
-    font_obj_id = 3 + 2 * n_pages
-
-    objects: dict[int, bytes] = {}
-    objects[1] = b"<< /Type /Catalog /Pages 2 0 R >>"
-    kids = " ".join(f"{oid} 0 R" for oid in page_obj_ids)
-    objects[2] = (
-        f"<< /Type /Pages /Kids [{kids}] /Count {n_pages} >>".encode("ascii")
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm,
+        topMargin=13 * mm, bottomMargin=13 * mm,
+        title="AI Signal ingestion architecture", author="signal-ingest", invariant=True,
     )
-    for page_id, content_id in zip(page_obj_ids, content_obj_ids, strict=True):
-        objects[page_id] = (
-            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-            f"/Contents {content_id} 0 R "
-            f"/Resources << /Font << /F1 {font_obj_id} 0 R >> >> >>"
-        ).encode("ascii")
-    for content_id, stream in zip(content_obj_ids, streams, strict=True):
-        objects[content_id] = (
-            f"<< /Length {len(stream)} >>\nstream\n".encode("ascii")
-            + stream
-            + b"\nendstream"
-        )
-    objects[font_obj_id] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
-
-    # Assemble with xref.
-    max_id = font_obj_id
-    pieces: list[bytes] = [b"%PDF-1.4\n"]
-    offsets: dict[int, int] = {}
-    for oid in range(1, max_id + 1):
-        offsets[oid] = sum(len(p) for p in pieces)
-        pieces.append(f"{oid} 0 obj\n".encode("ascii"))
-        pieces.append(objects[oid])
-        pieces.append(b"\nendobj\n")
-    xref_pos = sum(len(p) for p in pieces)
-    pieces.append(f"xref\n0 {max_id + 1}\n".encode("ascii"))
-    pieces.append(b"0000000000 65535 f \n")
-    for oid in range(1, max_id + 1):
-        pieces.append(f"{offsets[oid]:010d} 00000 n \n".encode("ascii"))
-    pieces.append(
-        f"trailer\n<< /Size {max_id + 1} /Root 1 0 R >>\n"
-        f"startxref\n{xref_pos}\n%%EOF\n".encode("ascii")
-    )
-    out.write_bytes(b"".join(pieces))
+    doc.build(markdown_flowables(Path(source).read_text(encoding="utf-8"), doc.width))
+    data = buf.getvalue()
+    pages = count_pdf_pages(data)
+    if pages > MAX_PAGES:
+        raise ValueError(f"architecture.pdf would be {pages} pages (> {MAX_PAGES}); trim the source")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(data)
     return out
 
 
 def sha256_file(path: Path | str) -> str:
-    data = Path(path).read_bytes()
-    return hashlib.sha256(data).hexdigest()
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def count_pdf_pages(path: Path | str) -> int:
-    """Count /Type /Page entries (not /Pages) in a simple PDF."""
-    text = Path(path).read_bytes()
-    # Match dictionary entries that declare a Page (not Pages tree).
-    count = 0
-    needle = b"/Type /Page"
-    start = 0
-    while True:
-        idx = text.find(needle, start)
-        if idx < 0:
-            break
-        # Exclude /Type /Pages
-        after = text[idx + len(needle) : idx + len(needle) + 1]
-        if after != b"s":
-            count += 1
-        start = idx + len(needle)
-    return count
+__all__ = [
+    "ARCHITECTURE_PDF_PATH",
+    "ARCHITECTURE_SOURCE_PATH",
+    "MAX_PAGES",
+    "count_pdf_pages",
+    "markdown_flowables",
+    "render_architecture_pdf",
+    "sha256_file",
+]

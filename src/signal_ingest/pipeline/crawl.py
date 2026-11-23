@@ -1,7 +1,8 @@
-"""Fixture-mode crawl: discover + enqueue from labeled local fixtures."""
+"""Crawl: discover + enqueue (fixture payloads, or live documented listings)."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -95,17 +96,54 @@ def crawl_source(
     partition: str = "default",
 ) -> dict[str, Any]:
     """
-    Fixture-mode discovery into the shared queue/DB.
+    Discovery into the shared queue/DB.
 
-    Live mode refuses unlabeled network discovery here (B8).
+    Fixture mode reads labeled local fixtures. Live mode fetches the documented
+    bulk listing once (live.bulk.fetch_bulk_listing) and enqueues into `run_id`
+    so several sources share one run.
     """
     cfg = settings or get_settings()
-    if cfg.mode is not Mode.FIXTURE:
-        raise RuntimeError(
-            "crawl CLI discovery from local fixtures requires --mode fixture "
-            "(live discovery is B8)"
+    listing_meta: dict[str, Any] = {}
+    if cfg.mode is Mode.LIVE:
+        from signal_ingest.live.bulk import LISTINGS, fetch_bulk_listing
+
+        aliases = {"yc": "bulk.yc", "products": "bulk.products", "papers": "bulk.papers", "openrouter": "bulk.openrouter"}
+        adapter_id = aliases.get(source_id, source_id)
+        if adapter_id not in LISTINGS:
+            raise ValueError(f"live crawl supports {sorted(LISTINGS)}; got {source_id!r}")
+        fetched = asyncio.run(fetch_bulk_listing(adapter_id, cfg))
+        payload = (
+            {"papers": fetched["papers"], "links": fetched["links"]}
+            if adapter_id == "bulk.papers"
+            else fetched["rows"]
         )
-    adapter_id, payload = resolve_fixture_payload(source_id)
+        listing_meta = {k: v for k, v in fetched.items() if k not in {"rows", "papers", "links"}}
+        from signal_ingest.live.inventory import update_source_status
+
+        update_source_status(
+            LISTINGS[adapter_id][0],
+            status="qualified" if fetched["rows"] else "disabled",
+            probe={
+                "probe_artifact": fetched.get("probe_artifact"),
+                "fetch_status": "ok" if fetched["rows"] else "empty",
+                "observed_at": (fetched.get("listing") or {}).get("fetched_at"),
+                "pilot_count": len(fetched["rows"]),
+            },
+        )
+        if adapter_id == "bulk.papers":
+            complete = int(fetched.get("papers_metadata_complete") or 0)
+            update_source_status(
+                "bulk_openalex_paper_metadata",
+                status="qualified" if complete else "disabled",
+                probe={
+                    "probe_artifact": fetched.get("probe_artifact"),
+                    "fetch_status": "ok" if complete else "empty",
+                    "pilot_count": complete,
+                },
+            )
+    else:
+        adapter_id, payload = resolve_fixture_payload(source_id)
+    live = cfg.mode is Mode.LIVE
     with connect(cfg) as conn:
         rid = run_id or create_run(
             conn,
@@ -113,8 +151,8 @@ def crawl_source(
             metadata={
                 "command": "crawl",
                 "source_id": adapter_id,
-                "fixture": True,
-                "not_for_live_export": True,
+                "fixture": not live,
+                "not_for_live_export": not live,
             },
         )
         if is_bulk_source(adapter_id):
@@ -138,7 +176,10 @@ def crawl_source(
             "UPDATE runs SET status = %s, metadata = metadata || %s::jsonb WHERE id = %s",
             (
                 "crawling",
-                json.dumps({"last_source": adapter_id}),
+                json.dumps(
+                    {"last_source": adapter_id, **({f"listing:{adapter_id}": listing_meta} if live else {})},
+                    default=str,
+                ),
                 str(rid),
             ),
         )
@@ -147,7 +188,8 @@ def crawl_source(
         "run_id": str(rid),
         "source_id": adapter_id,
         "mode": cfg.mode.value,
-        "discover": result,
+        "discover": {k: v for k, v in result.items() if k != "checkpoint"} if live else result,
+        **({"listing": listing_meta} if live else {}),
         "raw_root": str(cfg.assert_mode_raw_root()),
     }
 

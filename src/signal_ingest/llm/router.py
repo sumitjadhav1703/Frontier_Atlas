@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 import json
 import os
+import sys
+import logging
 import re
 from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
@@ -18,8 +20,19 @@ os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 # litellm's DEV mode runs dotenv.load_dotenv() at import; keys must come only from the caller's env.
 os.environ["LITELLM_MODE"] = "PRODUCTION"
 
+# LiteLLM's own handlers print INFO lines to stdout, which corrupts the CLI's JSON output.
+os.environ.setdefault("LITELLM_LOG", "WARNING")
+
 import litellm  # noqa: E402
 from litellm.integrations.custom_logger import CustomLogger  # noqa: E402
+
+litellm.suppress_debug_info = True
+for _name in ("LiteLLM", "LiteLLM Router", "LiteLLM Proxy"):
+    _lg = logging.getLogger(_name)
+    _lg.setLevel(logging.WARNING)
+    for _h in list(_lg.handlers):
+        if isinstance(_h, logging.StreamHandler) and getattr(_h, "stream", None) is sys.stdout:
+            _h.setStream(sys.stderr)
 from litellm.utils import _get_retry_after_from_exception_header  # noqa: E402
 
 from signal_ingest.config.clock import SystemClock  # noqa: E402

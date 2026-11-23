@@ -32,6 +32,12 @@ from signal_ingest.resolution.types import (
 )
 
 
+_OPTIONAL_COLUMNS = (
+    (TAB_ENTITY_MAPPING_LOG, "suggested_candidates"),
+    (TAB_NEWS, "nearDuplicateOf"),
+)
+
+
 def _parse_as_of(as_of: str | datetime) -> datetime:
     if isinstance(as_of, datetime):
         dt = as_of
@@ -124,6 +130,8 @@ def _candidate_to_flat(
         )
         if employer:
             flat.setdefault("content.employerJobUrl", employer)
+    if tab == TAB_NEWS and meta.get("nearDuplicateOf"):
+        flat["nearDuplicateOf"] = str(meta["nearDuplicateOf"])
     # Freshness filter for Jobs/News at export time.
     if tab in {TAB_JOBS, TAB_NEWS}:
         content = payload.get("content") or {}
@@ -179,7 +187,8 @@ def _mapping_rows(
         cur.execute(
             f"""
             SELECT entity_type, raw_name, canonical_name, canonical_id, method,
-                   decision, evidence_url, run_id, rule_version
+                   decision, evidence_url, run_id, rule_version,
+                   payload->>'suggested_candidates' AS suggested_candidates
             FROM resolution_events
             {where}
             ORDER BY entity_type ASC, raw_name ASC, rule_version ASC, created_at ASC
@@ -205,6 +214,8 @@ def _mapping_rows(
             run_id=str(row["run_id"]) if row.get("run_id") else (str(run_id) if run_id else None),
         )
         flat = log.model_dump(mode="json")
+        if row.get("suggested_candidates"):
+            flat["suggested_candidates"] = row["suggested_candidates"]
         flat["asOf"] = as_of.isoformat().replace("+00:00", "Z")
         flat["lineageMode"] = lineage_mode
         flat["_tab"] = TAB_ENTITY_MAPPING_LOG
@@ -302,6 +313,12 @@ def build_export_snapshot(
     for tab_name, rows in tabs.items():
         rows.sort(key=lambda r: _row_sort_key(r, tab_name))
 
+    headers = {name: list(TAB_HEADERS[name]) for name in TAB_NAMES}
+    # R4 columns appear only once embeddings produced a value: no-embedding exports stay byte-stable.
+    for tab_name, column in _OPTIONAL_COLUMNS:
+        if any(r.get(column) for r in tabs[tab_name]):
+            headers[tab_name].append(column)
+
     return {
         "run_id": str(rid),
         "as_of": cutoff.isoformat().replace("+00:00", "Z"),
@@ -309,7 +326,7 @@ def build_export_snapshot(
         "lineage_mode": lineage,
         "tabs": tabs,
         "tab_names": list(TAB_NAMES),
-        "headers": {name: list(TAB_HEADERS[name]) for name in TAB_NAMES},
+        "headers": headers,
         "counts": {name: len(rows) for name, rows in tabs.items()},
     }
 

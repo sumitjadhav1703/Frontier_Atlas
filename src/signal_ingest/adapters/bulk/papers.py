@@ -56,6 +56,12 @@ def discover_from_payload(
         )
         if aid:
             edges.extend(by_paper.get(f"arxiv:{aid}", []))
+        # Non-arXiv rows: join on the shared PwC paper_url.
+        if paper.get("paper_url"):
+            edges.extend(by_paper.get(str(paper["paper_url"]), []))
+        # One link can match several keys (paper_url + arXiv id): keep each once.
+        seen_edges: set[int] = set()
+        edges = [e for e in edges if not (id(e) in seen_edges or seen_edges.add(id(e)))]
         items.append(
             DiscoveredItem(
                 url=url,
@@ -113,6 +119,18 @@ def parse_observation(
         )
 
     external_id = paper_identity(data)
+    if data.get("_metadata_missing"):
+        # Live listing: no OpenAlex work (or no title/authors/date) for this arXiv id.
+        return BulkParseResult(
+            ok=False,
+            record_type="RESEARCH_PAPER",
+            external_id=external_id,
+            quarantine_reason="missing_paper_metadata",
+            quarantine_detail={
+                "arxiv_id": data.get("arxiv_id"),
+                "listing_url": (data.get("_listing") or {}).get("url"),
+            },
+        )
     title = data.get("title") or data.get("paper_title")
     authors = _authors(data)
     paper_url = (
@@ -258,8 +276,15 @@ def parse_observation(
         "primary_repo": {
             "url": github_url,
             "official": bool(primary.get("is_official") or primary.get("official")),
+            **(
+                {"association_listing": primary["_listing"]}
+                if isinstance(primary.get("_listing"), dict)
+                else {}
+            ),
         },
     }
+    if data.get("openalex_id"):
+        evidence["metadata_source"] = {"openalex_id": data["openalex_id"], "listing": data.get("_listing")}
     relations = [
         {
             "relation_type": "IMPLEMENTED_BY",

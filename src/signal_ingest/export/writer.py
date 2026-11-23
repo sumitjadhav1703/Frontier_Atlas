@@ -144,7 +144,7 @@ def export_via_transport(
             "written_rows": max(0, written - 1),  # exclude header
             "read_back_rows": max(0, len(read_back) - 1) if read_back else 0,
             "hash": _hash_matrix(matrix),
-            "headers": list(TAB_HEADERS[tab]),
+            "headers": list((snapshot.get("headers") or {}).get(tab) or TAB_HEADERS[tab]),
         }
     results["counts"] = {
         tab: results["tabs"][tab]["written_rows"] for tab in TAB_NAMES

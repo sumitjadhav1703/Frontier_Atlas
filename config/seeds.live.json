@@ -2,518 +2,860 @@
   "format_version": "1.0",
   "identities": [
     {
-      "aliases": [
-        "leadgenius"
-      ],
+      "aliases": [],
+      "canonical_name": "Pulpix",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/pulpix",
+      "id": "live.startup.1019",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1019"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Netomi",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/netomi",
+      "id": "live.startup.1033",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1033"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Superside",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/superside",
+      "id": "live.startup.1034",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1034"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Podium",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/podium",
+      "id": "live.startup.1042",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1042"
+      }
+    },
+    {
+      "aliases": [],
       "canonical_name": "LeadGenius",
       "domains": [],
       "evidence_url": "https://www.ycombinator.com/companies/leadgenius",
       "id": "live.startup.105",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
         "yc": "105"
       }
     },
     {
-      "aliases": [
-        "directed-edge"
-      ],
-      "canonical_name": "Directed Edge",
+      "aliases": [],
+      "canonical_name": "Gecko Robotics",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/directed-edge",
-      "id": "live.startup.245",
+      "evidence_url": "https://www.ycombinator.com/companies/gecko-robotics",
+      "id": "live.startup.1051",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "245"
-      }
-    },
-    {
-      "aliases": [
-        "olark"
-      ],
-      "canonical_name": "Olark",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/olark",
-      "id": "live.startup.249",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "249"
-      }
-    },
-    {
-      "aliases": [
-        "justspotted"
-      ],
-      "canonical_name": "JustSpotted",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/justspotted",
-      "id": "live.startup.289",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "289"
-      }
-    },
-    {
-      "aliases": [
-        "canopy-labs"
-      ],
-      "canonical_name": "Canopy Labs",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/canopy-labs",
-      "id": "live.startup.391",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "391"
-      }
-    },
-    {
-      "aliases": [
-        "plivo"
-      ],
-      "canonical_name": "Plivo",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/plivo",
-      "id": "live.startup.464",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "464"
-      }
-    },
-    {
-      "aliases": [
-        "radar"
-      ],
-      "canonical_name": "RADAR",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/radar",
-      "id": "live.startup.493",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "493"
-      }
-    },
-    {
-      "aliases": [
-        "semantics3"
-      ],
-      "canonical_name": "Semantics3",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/semantics3",
-      "id": "live.startup.511",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "511"
-      }
-    },
-    {
-      "aliases": [
-        "casetext"
-      ],
-      "canonical_name": "Casetext",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/casetext",
-      "id": "live.startup.542",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "542"
-      }
-    },
-    {
-      "aliases": [
-        "caremessage"
-      ],
-      "canonical_name": "CareMessage",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/caremessage",
-      "id": "live.startup.577",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "577"
-      }
-    },
-    {
-      "aliases": [
-        "cruise"
-      ],
-      "canonical_name": "Cruise",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/cruise",
-      "id": "live.startup.590",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "590"
-      }
-    },
-    {
-      "aliases": [
-        "mixerbox"
-      ],
-      "canonical_name": "MixerBox",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/mixerbox",
-      "id": "live.startup.641",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "641"
-      }
-    },
-    {
-      "aliases": [
-        "opencurriculum"
-      ],
-      "canonical_name": "OpenCurriculum",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/opencurriculum",
-      "id": "live.startup.642",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "642"
-      }
-    },
-    {
-      "aliases": [
-        "checkr"
-      ],
-      "canonical_name": "Checkr",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/checkr",
-      "id": "live.startup.662",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "662"
-      }
-    },
-    {
-      "aliases": [
-        "salessift"
-      ],
-      "canonical_name": "SalesSift",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/salessift",
-      "id": "live.startup.707",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "707"
-      }
-    },
-    {
-      "aliases": [
-        "weave-2"
-      ],
-      "canonical_name": "Weave",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/weave-2",
-      "id": "live.startup.720",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "720"
-      }
-    },
-    {
-      "aliases": [
-        "qventus"
-      ],
-      "canonical_name": "Qventus",
-      "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/qventus",
-      "id": "live.startup.740",
-      "metadata": {
-        "origin": "live_bulk_pilot",
-        "synthetic": false
-      },
-      "namespace": "startup",
-      "source_ids": {
-        "yc": "740"
+        "yc": "1051"
       }
     },
     {
       "aliases": [],
-      "canonical_name": "20n",
+      "canonical_name": "HistoWiz",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/20n",
-      "id": "live.startup.747",
+      "evidence_url": "https://www.ycombinator.com/companies/histowiz",
+      "id": "live.startup.1053",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "747"
+        "yc": "1053"
       }
     },
     {
-      "aliases": [
-        "akido-labs"
-      ],
-      "canonical_name": "Akido Labs",
+      "aliases": [],
+      "canonical_name": "Caper",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/akido-labs",
-      "id": "live.startup.748",
+      "evidence_url": "https://www.ycombinator.com/companies/caper",
+      "id": "live.startup.1058",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "748"
+        "yc": "1058"
       }
     },
     {
-      "aliases": [
-        "zeitview"
-      ],
-      "canonical_name": "Zeitview",
+      "aliases": [],
+      "canonical_name": "Sendbird",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/zeitview",
-      "id": "live.startup.762",
+      "evidence_url": "https://www.ycombinator.com/companies/sendbird",
+      "id": "live.startup.1079",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "762"
+        "yc": "1079"
       }
     },
     {
-      "aliases": [
-        "paperspace"
-      ],
-      "canonical_name": "Paperspace",
+      "aliases": [],
+      "canonical_name": "Nova",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/paperspace",
-      "id": "live.startup.780",
+      "evidence_url": "https://www.ycombinator.com/companies/nova",
+      "id": "live.startup.1084",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "780"
+        "yc": "1084"
       }
     },
     {
-      "aliases": [
-        "smarking"
-      ],
-      "canonical_name": "Smarking",
+      "aliases": [],
+      "canonical_name": "Overview",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/smarking",
-      "id": "live.startup.788",
+      "evidence_url": "https://www.ycombinator.com/companies/overview",
+      "id": "live.startup.11895",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "788"
+        "yc": "11895"
       }
     },
     {
-      "aliases": [
-        "resolve"
-      ],
-      "canonical_name": "Resolve",
+      "aliases": [],
+      "canonical_name": "Flockjay",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/resolve",
-      "id": "live.startup.797",
+      "evidence_url": "https://www.ycombinator.com/companies/flockjay",
+      "id": "live.startup.11924",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "797"
+        "yc": "11924"
       }
     },
     {
-      "aliases": [
-        "yhat"
-      ],
-      "canonical_name": "Yhat",
+      "aliases": [],
+      "canonical_name": "AllSome Fulfillment",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/yhat",
-      "id": "live.startup.799",
+      "evidence_url": "https://www.ycombinator.com/companies/allsome-fulfillment",
+      "id": "live.startup.11935",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "799"
+        "yc": "11935"
       }
     },
     {
-      "aliases": [
-        "dabble"
-      ],
-      "canonical_name": "Dabble",
+      "aliases": [],
+      "canonical_name": "Centaur",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/dabble",
-      "id": "live.startup.822",
+      "evidence_url": "https://www.ycombinator.com/companies/centaur",
+      "id": "live.startup.11948",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "822"
+        "yc": "11948"
       }
     },
     {
-      "aliases": [
-        "sigopt"
-      ],
-      "canonical_name": "SigOpt",
+      "aliases": [],
+      "canonical_name": "Windsor",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/sigopt",
-      "id": "live.startup.830",
+      "evidence_url": "https://www.ycombinator.com/companies/windsor",
+      "id": "live.startup.11966",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "830"
+        "yc": "11966"
       }
     },
     {
-      "aliases": [
-        "tara-ai"
-      ],
-      "canonical_name": "Tara AI",
+      "aliases": [],
+      "canonical_name": "Hatch",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/tara-ai",
-      "id": "live.startup.848",
+      "evidence_url": "https://www.ycombinator.com/companies/hatch",
+      "id": "live.startup.11975",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "848"
+        "yc": "11975"
       }
     },
     {
-      "aliases": [
-        "mashgin"
-      ],
-      "canonical_name": "Mashgin",
+      "aliases": [],
+      "canonical_name": "BrainKey",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/mashgin",
-      "id": "live.startup.856",
+      "evidence_url": "https://www.ycombinator.com/companies/brainkey",
+      "id": "live.startup.11976",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "856"
+        "yc": "11976"
       }
     },
     {
-      "aliases": [
-        "ross-intelligence"
-      ],
-      "canonical_name": "ROSS Intelligence",
+      "aliases": [],
+      "canonical_name": "PatternFast (prior: Tailornova/Couturme)",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/ross-intelligence",
-      "id": "live.startup.875",
+      "evidence_url": "https://www.ycombinator.com/companies/patternfast-prior-tailornovacouturme",
+      "id": "live.startup.11986",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "875"
+        "yc": "11986"
       }
     },
     {
-      "aliases": [
-        "snapmagic"
-      ],
-      "canonical_name": "SnapMagic",
+      "aliases": [],
+      "canonical_name": "Community Phone Company",
       "domains": [],
-      "evidence_url": "https://www.ycombinator.com/companies/snapmagic",
-      "id": "live.startup.878",
+      "evidence_url": "https://www.ycombinator.com/companies/community-phone-company",
+      "id": "live.startup.11991",
       "metadata": {
-        "origin": "live_bulk_pilot",
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
         "synthetic": false
       },
       "namespace": "startup",
+      "owner_id": null,
       "source_ids": {
-        "yc": "878"
+        "yc": "11991"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Sapling.ai",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/sapling-ai",
+      "id": "live.startup.11994",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "11994"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Demodesk",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/demodesk",
+      "id": "live.startup.12005",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12005"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "AI Insurance",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/ai-insurance",
+      "id": "live.startup.12006",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12006"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Evo.Do",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/evo-do",
+      "id": "live.startup.12013",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12013"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Docucharm",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/docucharm",
+      "id": "live.startup.12015",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12015"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Askdata",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/askdata",
+      "id": "live.startup.12034",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12034"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Probably Genetic",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/probably-genetic",
+      "id": "live.startup.12036",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12036"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Superorder",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/superorder",
+      "id": "live.startup.12040",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12040"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Bunkerhill Health",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/bunkerhill-health",
+      "id": "live.startup.12042",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12042"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "In The Room",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/in-the-room",
+      "id": "live.startup.12062",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12062"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Farmstead",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/farmstead",
+      "id": "live.startup.1208",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1208"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Hypnos",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/hypnos",
+      "id": "live.startup.12090",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12090"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Superb AI",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/superb-ai",
+      "id": "live.startup.12091",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12091"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Sway Finance",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/sway-finance",
+      "id": "live.startup.1220",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1220"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Iris Automation",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/iris-automation",
+      "id": "live.startup.1221",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1221"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Glide",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/glide",
+      "id": "live.startup.12256",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12256"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "OneChronos",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/onechronos",
+      "id": "live.startup.1226",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1226"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Sublime Black",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/sublime-black",
+      "id": "live.startup.12265",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12265"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Mars Auto",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/mars-auto",
+      "id": "live.startup.12267",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12267"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Allure Systems",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/allure-systems",
+      "id": "live.startup.12271",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12271"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Tailor-ED",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/tailor-ed",
+      "id": "live.startup.12277",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12277"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "OutRival, Inc.",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/outrival-inc",
+      "id": "live.startup.12283",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12283"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "garten",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/garten",
+      "id": "live.startup.1237",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1237"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Airo Health",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/airo-health",
+      "id": "live.startup.1250",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1250"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Playground",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/playground",
+      "id": "live.startup.12507",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12507"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Synvivia",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/synvivia",
+      "id": "live.startup.1251",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "1251"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Figments",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/figments",
+      "id": "live.startup.12536",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12536"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Palifer",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/palifer",
+      "id": "live.startup.12542",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12542"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Symplex",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/symplex",
+      "id": "live.startup.12549",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12549"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Kraftful",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/kraftful",
+      "id": "live.startup.12550",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12550"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Well Principled",
+      "domains": [],
+      "evidence_url": "https://www.ycombinator.com/companies/well-principled",
+      "id": "live.startup.12553",
+      "metadata": {
+        "origin": "live_bulk_acquisition",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "yc": "12553"
       }
     }
   ],
-  "identity_count": 30,
+  "identity_count": 50,
   "lineage_mode": "live",
-  "pending_qualification": true,
-  "revision": "live-yc-pilot-94c97c226252d38f19fdffa7766ac73a17b4824cff1dd693b262bee563731f05",
+  "pending_qualification": false,
+  "revision": "live-run-a4fee584-3ac1-4188-95f4-19d7742dbd33",
   "rule_version": "resolution-v1",
   "target_count": 50
 }

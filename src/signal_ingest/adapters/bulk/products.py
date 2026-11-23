@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict, is_dataclass
 from typing import Any, Sequence
 
 from signal_ingest.adapters.bulk.eligibility import product_eligible
 from signal_ingest.adapters.bulk.mapping import (
     checkpoint_partition_key,
+    owner_from_html,
+    registrable_domain,
     classify_pricing,
     collapse_product_plans,
     content_revision,
@@ -34,10 +37,10 @@ def discover_from_payload(
     items: list[DiscoveredItem] = []
     for idx, row in enumerate(collapsed):
         external_id = _product_id(row)
+        # Listing rows: fetch the vendor homepage for owner evidence, not the directory page.
+        first = ("website", "url", "product_url") if row.get("_listing") else ("url", "product_url", "website")
         url = str(
-            row.get("url")
-            or row.get("product_url")
-            or row.get("website")
+            next((row[k] for k in first if row.get(k)), None)
             or f"https://agipicks.example/products/{external_id}"
         )
         items.append(
@@ -61,6 +64,7 @@ def parse_observation(
     raw: RawObservation,
     *,
     row: dict[str, Any] | None = None,
+    llm_owner: dict[str, Any] | None = None,
 ) -> BulkParseResult:
     data = row or _row_from_body(raw)
     if data is None:
@@ -85,6 +89,33 @@ def parse_observation(
     )
     owner_url = data.get("owner_url") or data.get("company_url") or data.get("about_url")
     pricing_url = data.get("pricing_url") or data.get("pricingUrl") or data.get("checkout_url")
+    agipicks = _is_agipicks_row(data)
+    if agipicks:
+        # Attributed directory pricing: evidence is the AgiPicks tool page.
+        pricing_url = pricing_url or data.get("url")
+    owner_method = "row"
+    owner_extra: dict[str, Any] = {}
+    homepage_url = raw.final_url or raw.request_url
+    website = data.get("website")
+    # Parked / redirected-away vendor domains cannot evidence the owner.
+    domain_mismatch = bool(
+        not owner
+        and _is_html(raw)
+        and website
+        and registrable_domain(homepage_url) != registrable_domain(str(website))
+    )
+    if not owner and not domain_mismatch:
+        html_owner = (
+            owner_from_html(raw.body, page_url=homepage_url, product_name=product_name)
+            if _is_html(raw)
+            else None
+        )
+        chosen = html_owner or (llm_owner if llm_owner and _owner_value(llm_owner) else None)
+        if chosen:
+            owner = _owner_value(chosen)
+            owner_url = chosen.get("url") or raw.final_url or raw.request_url
+            owner_method = str(chosen.get("method") or "json_ld")
+            owner_extra = {k: v for k, v in chosen.items() if k not in {"value", "owner"}}
     product_url = (
         data.get("product_url")
         or data.get("url")
@@ -95,6 +126,8 @@ def parse_observation(
     owner_evidenced = bool(owner) and bool(
         owner_url or data.get("owner_source") or data.get("attributed_owner")
     )
+    if owner and owner_method != "row":
+        owner_evidenced = bool(owner_url)
     # Directory-attributed owner field counts when explicitly marked.
     if owner and data.get("owner_evidenced") is True:
         owner_evidenced = True
@@ -107,13 +140,16 @@ def parse_observation(
     plans = list(data.get("plans") or [])
     pricing_model = classify_pricing(
         pricing=data.get("pricing") or data.get("pricingModel"),
-        plans=plans,
-        has_free_tier=data.get("has_free_tier"),
-        has_paid_tier=data.get("has_paid_tier"),
-        trial_only=data.get("trial_only")
+        # AgiPicks: the attributed pricingModel field alone decides (no plan inference).
+        plans=[] if agipicks else plans,
+        has_free_tier=None if agipicks else data.get("has_free_tier"),
+        has_paid_tier=None if agipicks else data.get("has_paid_tier"),
+        trial_only=None
+        if agipicks
+        else data.get("trial_only")
         if data.get("trial_only") is not None
         else _infer_trial_only(data, plans),
-        enterprise_only=data.get("enterprise_only"),
+        enterprise_only=None if agipicks else data.get("enterprise_only"),
     )
     pricing_evidenced = pricing_model is not None and bool(
         pricing_url
@@ -131,21 +167,24 @@ def parse_observation(
             quarantine_reason="missing_product_name",
             quarantine_detail={},
         )
-    if not owner_evidenced:
-        return BulkParseResult(
-            ok=False,
-            record_type="PRODUCT",
-            external_id=external_id,
-            quarantine_reason="missing_ownership_evidence",
-            quarantine_detail={"owner": owner, "owner_url": owner_url},
-        )
     if not pricing_evidenced or pricing_model is None:
         return BulkParseResult(
             ok=False,
             record_type="PRODUCT",
             external_id=external_id,
             quarantine_reason="missing_pricing_evidence",
-            quarantine_detail={"pricing": data.get("pricing"), "plans": plans},
+            quarantine_detail={"pricing": data.get("pricing") or data.get("pricingModel"), "plans": plans},
+        )
+    if not owner_evidenced:
+        return BulkParseResult(
+            ok=False,
+            record_type="PRODUCT",
+            external_id=external_id,
+            quarantine_reason="owner_domain_mismatch" if domain_mismatch else "missing_ownership_evidence",
+            quarantine_detail={
+                "owner": owner, "owner_url": owner_url, "homepage_url": raw.final_url,
+                "website": website, "html": _is_html(raw),
+            },
         )
 
     collected = get_clock().now()
@@ -156,14 +195,16 @@ def parse_observation(
             "startupName": str(owner),
             "pricingModel": pricing_model.value,
             "productName": str(product_name),
-            "productUrl": str(product_url),
+            "productUrl": str(data.get("website") if agipicks and data.get("website") else product_url),
             "ownerEvidenceUrl": owner_url or product_url,
             "pricingEvidenceUrl": pricing_url or product_url,
         },
         "collectedAt": collected.isoformat().replace("+00:00", "Z"),
         "meta": {
             "owner_evidenced": True,
+            "owner_method": owner_method,
             "pricing_evidenced": True,
+            **({"license": "CC BY 4.0", "attribution": "AgiPicks"} if agipicks else {}),
             "plans_collapsed": len(plans),
             "product_id": external_id,
         },
@@ -172,13 +213,16 @@ def parse_observation(
         "request_url": raw.request_url,
         "final_url": raw.final_url,
         "content_sha256": raw.content_sha256,
-        "owner": {"value": owner, "url": owner_url or product_url},
+        "owner": {"value": owner, "url": owner_url or product_url, "method": owner_method, **owner_extra},
         "pricing": {
             "model": pricing_model.value,
             "url": pricing_url or product_url,
             "plans": plans,
+            **({"field": "$.pricingModel", "pricesCheckedAt": data.get("pricesCheckedAt")} if agipicks else {}),
         },
     }
+    if data.get("_listing"):
+        evidence["listing"] = data["_listing"]
     eligible = product_eligible(
         payload, owner_evidenced=True, pricing_evidenced=True
     )
@@ -200,6 +244,74 @@ def parse_observation(
         ],
         eligible=eligible,
     )
+
+
+def _is_agipicks_row(data: dict[str, Any]) -> bool:
+    return "pricesCheckedAt" in data or "agipicks.com/tools/" in str(data.get("url") or "")
+
+
+def _is_html(raw: RawObservation) -> bool:
+    ctype = (raw.content_type or "").lower()
+    if "html" in ctype:
+        return True
+    head = (raw.body or b"")[:512].lstrip().lower()
+    return head.startswith(b"<!doctype html") or head.startswith(b"<html")
+
+
+def _owner_value(blob: dict[str, Any]) -> str | None:
+    val = blob.get("value") or blob.get("owner")
+    return str(val).strip() if val and str(val).strip() else None
+
+
+async def llm_owner_fallback(
+    raw: RawObservation,
+    *,
+    provider: Any,
+    row: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Grounded LLM owner from homepage HTML via extract(); None unless ACCEPTED."""
+    from signal_ingest.llm import extract
+    from signal_ingest.llm.types import ExtractCandidate, FieldDecision
+
+    if not raw.body:
+        return None
+    data = row or {}
+    name = data.get("productName") or data.get("name") or data.get("title")
+    html = raw.body.decode("utf-8", errors="replace")
+    candidate = ExtractCandidate(
+        candidate_id=f"owner:{_product_id(data) if data else raw.final_url}",
+        record_type="PRODUCT",
+        html=html,
+        target_entity=str(name) if name else None,
+        fields_requested=("owner",),
+        raw_hash=raw.content_sha256,
+        source_url=raw.final_url,
+    )
+    result = await extract(candidate, provider)
+    field = result.fields.get("owner")
+    if field is None or field.decision is not FieldDecision.ACCEPTED or not field.value:
+        return None
+    tier, model = result.provider, result.model
+    attempts = getattr(provider, "last_attempts", None) or []
+    ok = [a for a in attempts if getattr(a, "status", None) == "ok"]
+    if ok:
+        tier = ok[-1].tier
+        model = next(
+            (t.litellm_model for t in getattr(provider, "tiers", ()) if t.name == tier), model
+        )
+    return {
+        "value": str(field.value),
+        "owner": str(field.value),
+        "method": "llm",
+        "provider": tier,
+        "model": model,
+        "url": raw.final_url or raw.request_url,
+        "quote": field.quote,
+        "segment_ids": list(field.segment_ids),
+        "content_sha256": raw.content_sha256,
+        # Redacted dispatch records (tier/status/tokens only; no keys or headers).
+        "attempts": [asdict(a) if is_dataclass(a) else dict(a) for a in attempts],
+    }
 
 
 def _infer_trial_only(data: dict[str, Any], plans: list[dict[str, Any]]) -> bool | None:

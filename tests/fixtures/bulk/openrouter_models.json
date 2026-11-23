@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B8 OpenRouter: name-prefix owner, :free variant collapse, FREE/PAID/FREEMIUM, no-prefix quarantine",
+    "review_date": "2026-11-22",
+    "not_for_live_export": true,
+    "modeled_on": "openrouter.ai/api/v1/models listing shape"
+  },
+  "data": [
+    {
+      "id": "synthlab/orbit-7b",
+      "name": "SynthLab: Orbit 7B",
+      "created": 1767225600,
+      "description": "Synthetic fixture model with paid and free variants.",
+      "context_length": 32768,
+      "pricing": {"prompt": "0.0000002", "completion": "0.0000006", "request": "0", "image": "0"}
+    },
+    {
+      "id": "synthlab/orbit-7b:free",
+      "name": "SynthLab: Orbit 7B (free)",
+      "created": 1767225600,
+      "description": "Synthetic free variant.",
+      "context_length": 32768,
+      "pricing": {"prompt": "0", "completion": "0", "request": "0", "image": "0"}
+    },
+    {
+      "id": "synthlab/lens-pro",
+      "name": "SynthLab: Lens Pro",
+      "created": 1767225600,
+      "description": "Synthetic paid-only model.",
+      "context_length": 128000,
+      "pricing": {"prompt": "0.000003", "completion": "0.000015", "request": "0", "image": "0"}
+    },
+    {
+      "id": "fixture-ai/tiny-1b:free",
+      "name": "Fixture AI: Tiny 1B (free)",
+      "created": 1767225600,
+      "description": "Synthetic free-only model.",
+      "context_length": 8192,
+      "pricing": {"prompt": "0", "completion": "0", "request": "0", "image": "0"}
+    },
+    {
+      "id": "anon/mystery-13b",
+      "name": "Mystery 13B",
+      "created": 1767225600,
+      "description": "Synthetic model whose display name has no owner prefix.",
+      "context_length": 4096,
+      "pricing": {"prompt": "0.000001", "completion": "0.000002", "request": "0", "image": "0"}
+    }
+  ]
+}

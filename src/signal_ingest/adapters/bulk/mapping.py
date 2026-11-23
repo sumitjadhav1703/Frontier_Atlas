@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import html as html_lib
 import json
 import re
 from datetime import datetime, timezone
@@ -85,6 +86,275 @@ _DEP_NAME_HINTS = frozenset(
         "diffusers",
     }
 )
+
+
+UNMAPPED_PRICING_LABELS = frozenset(
+    {"contact-sales", "contact_sales", "contact sales", "contact", "open-source", "open_source", "opensource"}
+)
+
+OWNER_HTML_RULE_VERSION = "owner-html-v4"
+_JSONLD_RE = re.compile(
+    r"<script[^>]+type=[\"']application/ld\+json[\"'][^>]*>(.*?)</script>",
+    re.IGNORECASE | re.DOTALL,
+)
+_ORG_TYPES = frozenset({"organization", "corporation", "localbusiness", "ngo", "onlinebusiness"})
+_PUBLISHER_HOLDERS = frozenset({"website", "softwareapplication", "webapplication"})
+# Product/WebPage nodes count as publisher holders only when their own URL is on the homepage domain.
+_PUBLISHER_HOLDERS_DOMAIN_ONLY = frozenset({"product", "webpage"})
+_TAG_RE = re.compile(r"<[^>]+>")
+_INVISIBLE_RE = re.compile(
+    r"<!--.*?-->|<(script|style|noscript|template)\b[^>]*>.*?</\1\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+_BLOCK_TAG_RE = re.compile(
+    r"</?(?:p|div|section|article|aside|header|footer|nav|main|li|ul|ol|br|h[1-6]|table|tr|td|span)\b[^>]*>",
+    re.IGNORECASE,
+)
+_COPYRIGHT_RE = re.compile(
+    r"(?:©|\(c\)|\bcopyright\b)\s*©?\s*"
+    r"(?:(?:19|20)\d{2}\s*(?:[-–—]\s*(?:(?:19|20)\d{2}|present)\s*)?[,.]?\s*)?"
+    r"(?P<holder>[A-Z0-9][\w&.,'’\- ]{1,80}?)"
+    r"\s*(?:[.|·•]\s*)?(?=all rights|\||·|•|<|$|\n|\s{2,}|\. )",
+    re.IGNORECASE,
+)
+_LEGAL_SUFFIXES = (
+    "inc", "llc", "ltd", "limited", "gmbh", "corp", "corporation", "co", "plc", "ag", "sa",
+    "sas", "srl", "bv", "oy", "ab", "pty", "pte", "sl", "spa", "kk", "llp", "lp",
+)
+# "Co" must end the word: "Acme Co-pilot Ltd" keeps "Co-pilot".
+_LEGAL_SUFFIX_RE = re.compile(
+    r"^(?P<name>.*?\b(?:" + "|".join(_LEGAL_SUFFIXES) + r")\b\.?)(?=\s|,|$)",
+    re.IGNORECASE,
+)
+_HOLDER_REJECT_RE = re.compile(
+    r"\b(?:by|powered|template|templates|theme|themes|design|designed|built|made)\b|all rights",
+    re.IGNORECASE,
+)
+_PLATFORM_DENY = frozenset(
+    {
+        "webflow", "framer", "wix", "squarespace", "wordpress", "automattic", "shopify",
+        "vercel", "netlify", "godaddy", "carrd", "notion", "bubble", "ghost", "hubspot",
+        "google", "facebook", "meta", "themeforest", "elementor", "cloudflare",
+    }
+)
+_FOLD_STOP = frozenset({"the", "and", "of", "a"} | set(_LEGAL_SUFFIXES))
+_TLD_EXTRACT = None
+
+
+def registrable_domain(url_or_host: str | None) -> str | None:
+    """eTLD+1 via tldextract's bundled PSL; non-PSL hosts (fixtures, IPs) use the last two labels."""
+    global _TLD_EXTRACT
+    if not url_or_host:
+        return None
+    text = str(url_or_host).strip()
+    host = (urlparse(text if "://" in text else f"//{text}").hostname or "").lower().rstrip(".")
+    if not host:
+        return None
+    if _TLD_EXTRACT is None:
+        import tldextract
+
+        _TLD_EXTRACT = tldextract.TLDExtract(
+            suffix_list_urls=(), cache_dir=None, include_psl_private_domains=True
+        )
+    ext = _TLD_EXTRACT(host)
+    top = ext.top_domain_under_public_suffix
+    if top:
+        return top.lower()
+    if re.fullmatch(r"[\d.]+|\[?[0-9a-f:]+\]?", host):
+        return host
+    return ".".join(host.split(".")[-2:])
+
+
+def _fold_tokens(text: str | None) -> list[str]:
+    """Case/accent-folded alphanumeric tokens with legal suffixes and stopwords removed."""
+    import unicodedata
+
+    raw = unicodedata.normalize("NFKD", str(text or ""))
+    raw = "".join(ch for ch in raw if not unicodedata.combining(ch)).casefold()
+    return [t for t in re.split(r"[^0-9a-z]+", raw) if t and t not in _FOLD_STOP]
+
+
+def _domain_label(page_url: str | None) -> str:
+    reg = registrable_domain(page_url) or ""
+    return reg.split(".", 1)[0] if reg else ""
+
+
+_GENERIC_TOKENS = frozenset(
+    {
+        "ai", "app", "apps", "labs", "lab", "tech", "get", "try", "use", "hq", "io", "studio",
+        "writer", "cloud", "gpt", "chat", "bot", "the", "inc", "co", "llc", "ltd", "tools",
+        "tool", "data", "pro", "hub", "ly",
+    }
+)
+
+
+def owner_plausible(holder: str, *, page_url: str | None, product_name: str | None) -> bool:
+    """Label rule for owners with no URL evidence (URL-less JSON-LD nodes, footer holders).
+
+    Accept iff the folded holder equals the homepage domain label, or one is a prefix of the
+    other with >= 4 shared chars; or a non-generic product-name token (>= 3 chars) is in the
+    holder and also in the domain label. Platform credits are always rejected.
+    """
+    tokens = _fold_tokens(holder)
+    if not tokens or _HOLDER_REJECT_RE.search(holder) or set(tokens) & _PLATFORM_DENY:
+        return False
+    label = re.sub(r"[^0-9a-z]", "", _domain_label(page_url))
+    if not label:
+        return False
+    compact = "".join(tokens)
+    if compact == label:
+        return True
+    shorter, longer = sorted((compact, label), key=len)
+    if len(shorter) >= 4 and longer.startswith(shorter):
+        return True
+    product = {t for t in _fold_tokens(product_name) if len(t) >= 3 and t not in _GENERIC_TOKENS}
+    return any(t in label for t in product & set(tokens))
+
+
+def _node_hosts(node: dict[str, Any]) -> list[str]:
+    vals: list[Any] = [node.get("url"), node.get("@id")]
+    same = node.get("sameAs")
+    vals.extend(same if isinstance(same, list) else [same])
+    return [str(v) for v in vals if isinstance(v, str) and ("://" in v or v.startswith("//"))]
+
+
+def _on_domain(node: dict[str, Any], domain: str | None) -> bool:
+    return bool(domain) and any(registrable_domain(u) == domain for u in _node_hosts(node))
+
+
+def _jsonld_nodes(html: str) -> list[dict[str, Any]]:
+    nodes: list[dict[str, Any]] = []
+
+    def walk(obj: Any) -> None:
+        if isinstance(obj, list):
+            for x in obj:
+                walk(x)
+        elif isinstance(obj, dict):
+            nodes.append(obj)
+            if isinstance(obj.get("@graph"), list):
+                walk(obj["@graph"])
+
+    for block in _JSONLD_RE.findall(html):
+        try:
+            walk(json.loads(block.strip()))
+        except (ValueError, TypeError):
+            continue
+    return nodes
+
+
+def _types(node: dict[str, Any]) -> set[str]:
+    raw = node.get("@type")
+    vals = raw if isinstance(raw, list) else [raw]
+    return {str(v).strip().lower() for v in vals if v}
+
+
+def _org_name(node: Any) -> str | None:
+    if not isinstance(node, dict):
+        return None
+    for key in ("legalName", "name"):
+        val = node.get(key)
+        if isinstance(val, str) and val.strip():
+            return " ".join(val.split())
+    return None
+
+
+def _visible_text(fragment: str) -> str:
+    text = _BLOCK_TAG_RE.sub("\n", fragment)
+    return html_lib.unescape(_TAG_RE.sub(" ", text))
+
+
+_PRODUCT_OF_RE = re.compile(r"(?:^|[,\s])(?:a\s+)?product\s+of\s+(?P<owner>.+)$", re.IGNORECASE)
+
+
+def clean_owner_name(name: str) -> str:
+    """Trim page-title and address noise from a found owner string (excerpt keeps the raw text)."""
+    out = html_lib.unescape(name).replace("\u2122", "").replace("\u00ae", "").replace("\u00a9", "")
+    out = re.sub(r"^\s*(?:copyright|\(c\))\s*(?:\d{4}(?:\s*[-\u2013]\s*\d{4})?)?\s*", "", out, flags=re.IGNORECASE)
+    m = _PRODUCT_OF_RE.search(out)
+    if m:
+        out = m.group("owner")
+    out = re.split(r"\s+[|\u2014\u2013-]\s+", out, maxsplit=1)[0]  # "Brand - tagline", "Brand | tagline"
+    out = re.split(r",\s*\d", out, maxsplit=1)[0]  # ", 165 Page St, ..." street address
+    out = re.sub(r"\s+\d{4}$", "", out)  # trailing year
+    return " ".join(out.split()).strip(" ,;:")
+
+
+def owner_from_html(
+    html: str | bytes | None,
+    *,
+    page_url: str | None = None,
+    product_name: str | None = None,
+) -> dict[str, Any] | None:
+    """Deterministic owner from a vendor homepage (rule OWNER_HTML_RULE_VERSION).
+
+    JSON-LD: the publisher/author/provider of a WebSite/SoftwareApplication node, or an
+    Organization/Corporation node (legalName before name). A node counts when it (or the
+    WebSite it publishes) sits on the homepage's registrable domain, or its name overlaps
+    the domain label / product name. Footer: a ©/(c)/Copyright holder from <footer> text,
+    else the last visible text block, under the same overlap rule and platform denylist.
+    Returns {value, method, pointer, excerpt, rule_version} or None.
+    """
+    if not html:
+        return None
+    text = html.decode("utf-8", errors="replace") if isinstance(html, bytes) else html
+    domain = registrable_domain(page_url)
+
+    def ok(name: str, node: dict[str, Any] | None = None, *, linked: bool = False) -> bool:
+        if _HOLDER_REJECT_RE.search(name) or set(_fold_tokens(name)) & _PLATFORM_DENY:
+            return False
+        if node is not None and _node_hosts(node):
+            # Domain-first: a node that carries URLs must carry one on the homepage domain.
+            return _on_domain(node, domain)
+        return linked or owner_plausible(name, page_url=page_url, product_name=product_name)
+
+    def found(name: str, method: str, pointer: str, excerpt: str) -> dict[str, Any]:
+        return {
+            "value": clean_owner_name(name) or name, "method": method, "pointer": pointer, "excerpt": excerpt,
+            "rule_version": OWNER_HTML_RULE_VERSION, "homepage_domain": domain,
+        }
+
+    nodes = _jsonld_nodes(text)
+    by_id = {str(n["@id"]): n for n in nodes if n.get("@id")}
+    for node in nodes:
+        types = _types(node)
+        holder_on_domain = _on_domain(node, domain)
+        if not (types & _PUBLISHER_HOLDERS or (types & _PUBLISHER_HOLDERS_DOMAIN_ONLY and holder_on_domain)):
+            continue
+        for key in ("publisher", "author", "provider", "creator"):
+            ref = node.get(key)
+            ref = ref[0] if isinstance(ref, list) and ref else ref
+            if isinstance(ref, dict) and ref.get("@id") and not _org_name(ref):
+                ref = by_id.get(str(ref["@id"]))
+            if isinstance(ref, dict) and "person" not in _types(ref):
+                name = _org_name(ref)
+                if name and ok(name, ref, linked=holder_on_domain):
+                    return found(name, "json_ld", f"$.{sorted(types)[0]}.{key}", name)
+    for node in nodes:
+        if _types(node) & _ORG_TYPES:
+            name = _org_name(node)
+            if name and ok(name, node):
+                key = "legalName" if node.get("legalName") else "name"
+                return found(name, "json_ld", f"$.Organization.{key}", name)
+    visible = _INVISIBLE_RE.sub(" ", text)
+    footers = re.findall(r"<footer\b.*?</footer>", visible, re.IGNORECASE | re.DOTALL)
+    if footers:
+        chunks = [("footer", _visible_text(f)) for f in footers]
+    else:
+        body = re.split(r"<body\b[^>]*>", visible, maxsplit=1, flags=re.IGNORECASE)[-1]
+        lines = [ln.strip() for ln in _visible_text(body).split("\n") if ln.strip()]
+        chunks = [("tail_block", lines[-1])] if lines else []
+    for pointer, plain in chunks:
+        for m in _COPYRIGHT_RE.finditer(plain):
+            holder = " ".join(m.group("holder").split()).strip(" ,.-|")
+            legal = _LEGAL_SUFFIX_RE.match(holder)
+            if legal:
+                holder = legal.group("name").strip()
+            if len(holder) < 2 or re.fullmatch(r"[\d\s\-–—]+", holder):
+                continue
+            if not ok(holder):
+                continue
+            return found(holder, "footer_copyright", pointer, " ".join(m.group(0).split()))
+    return None
 
 
 def content_revision(payload: Any) -> str:
@@ -186,6 +456,9 @@ def classify_pricing(
     Permanent free + paid → FREEMIUM.
     """
     label = (pricing or "").strip().lower()
+    # contracts.md: "contact us" alone or an open-source label is insufficient evidence.
+    if label in UNMAPPED_PRICING_LABELS:
+        return None
     plan_rows = plans or []
 
     free = has_free_tier

@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "label": "synthetic",
+    "purpose": "B8 AgiPicks tools.json rows: pricingModel mapping and vendor-homepage owner evidence",
+    "review_date": "2026-11-22",
+    "not_for_live_export": true,
+    "modeled_on": "agipicks.com/data/tools.json (CC BY 4.0) row shape"
+  },
+  "tools": [
+    {"slug": "synth-freemium", "name": "Synth Freemium", "url": "https://agipicks.com/tools/synth-freemium/", "website": "https://synthfreemium.example/", "category": "writing", "pricingModel": "freemium", "freePlan": true, "verifiedAt": "2026-11-01", "currency": "USD", "pricesCheckedAt": "2026-11-01", "plans": [{"name": "Free", "monthly": 0, "isFree": true}, {"name": "Pro", "monthly": 20, "isFree": false}], "retired": null},
+    {"slug": "synth-paid", "name": "Synth Paid", "url": "https://agipicks.com/tools/synth-paid/", "website": "https://synthpaid.example/", "category": "design", "pricingModel": "paid", "freePlan": false, "verifiedAt": "2026-11-01", "currency": "USD", "pricesCheckedAt": "2026-11-01", "plans": [{"name": "Starter", "monthly": 12, "isFree": false}], "retired": null},
+    {"slug": "synth-free", "name": "Synth Free", "url": "https://agipicks.com/tools/synth-free/", "website": "https://synthfree.example/", "category": "code", "pricingModel": "free", "freePlan": true, "verifiedAt": "2026-11-01", "currency": "USD", "pricesCheckedAt": "2026-11-01", "plans": [{"name": "Free", "monthly": 0, "isFree": true}], "retired": null},
+    {"slug": "synth-contact", "name": "Synth Contact", "url": "https://agipicks.com/tools/synth-contact/", "website": "https://synthcontact.example/", "category": "sales", "pricingModel": "contact-sales", "freePlan": false, "verifiedAt": "2026-11-01", "currency": "USD", "pricesCheckedAt": "2026-11-01", "plans": [], "retired": null},
+    {"slug": "synth-oss", "name": "Synth OSS", "url": "https://agipicks.com/tools/synth-oss/", "website": "https://synthoss.example/", "category": "code", "pricingModel": "open-source", "freePlan": true, "verifiedAt": "2026-11-01", "currency": "USD", "pricesCheckedAt": "2026-11-01", "plans": [], "retired": null}
+  ]
+}

@@ -223,3 +223,38 @@ def assert_fixture_seeds_rejected_in_live() -> None:
     except FixtureSeedRejectedError:
         return
     raise AssertionError("expected FixtureSeedRejectedError for fixture seeds in live mode")
+
+
+def build_live_seeds_from_run(settings: Settings, *, run_id: str, limit: int = LIVE_SEED_TARGET) -> Path:
+    """Seed register from accepted live STARTUP candidates of one run (stable id order)."""
+    from signal_ingest.storage.db import connect
+
+    if settings.mode is not Mode.LIVE:
+        raise SeedRegisterError("build_live_seeds_from_run requires mode=live")
+    with connect(settings) as conn:
+        rows = conn.execute(
+            """
+            SELECT external_id, payload FROM candidates
+            WHERE run_id = %s AND record_type = 'STARTUP' AND status = 'accepted'
+            ORDER BY external_id
+            """,
+            (run_id,),
+        ).fetchall()
+    startup_rows = [
+        {
+            "id": external_id,
+            "name": (payload.get("content") or {}).get("entityName"),
+            "url": (payload.get("source") or {}).get("url"),
+        }
+        for external_id, payload in rows
+    ]
+    # Distinct startups can share a display name; keep only unambiguous names as seeds.
+    names: dict[str, int] = {}
+    for r in startup_rows:
+        key = str(r["name"] or "").strip().casefold()
+        names[key] = names.get(key, 0) + 1
+    startup_rows = [r for r in startup_rows if r["name"] and names[str(r["name"]).strip().casefold()] == 1]
+    identities = build_live_seeds_from_startup_rows(startup_rows, limit=limit)
+    for ident in identities:
+        ident["metadata"] = {"origin": "live_bulk_acquisition", "synthetic": False, "run_id": str(run_id)}
+    return write_live_seed_register(identities, settings=settings, revision=f"live-run-{run_id}")

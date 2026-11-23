@@ -13,11 +13,11 @@ attribution: pwc-archive papers-with-abstracts and links-between-paper-and-code 
 domain_governor: paperswithcode.com
 fallback: direct code links in the paper or author project page; arXiv metadata batches
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_papers_with_code/bulk_pwc_hf_pilot_20261121T190739Z.json
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_papers_with_code/openalex_batch_20261122T201456Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: 7dbcf15c52f6366752a2dd39ffb39197f3f73f68d52f80dc5612b62a8fc181e6
 probe_sample_date: "2026-11-21T19:07:40.173970+00:00"
 probe_observed_at: "2026-11-21T19:07:40.173991+00:00"
 probe_error: robots.txt disallows URL
-probe_pilot_count: 30
+probe_pilot_count: 1700
 notes: Prefer explicitly official repo links; archive date without time is not midnight publication.

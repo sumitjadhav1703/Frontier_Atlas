@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
@@ -49,6 +50,11 @@ def _root(
     if mode is not None:
         overrides["mode"] = Mode(mode)
     settings = load_settings(**overrides)
+    if settings.mode is Mode.LIVE:
+        # Free-tier keys for live stages only; values stay in this process env, never logged.
+        from signal_ingest.live.orchestrate import load_env_keys
+
+        load_env_keys()
     ctx.ensure_object(dict)
     ctx.obj["settings"] = settings
 
@@ -204,7 +210,7 @@ def bench_cmd(
         help="Write artifacts/gates/b7_benchmark.json",
     ),
 ) -> None:
-    """Run synthetic 1k/10k × 1/4 worker benchmark (not live throughput)."""
+    """Run loopback fixture 1k/10k × 1/4 worker benchmark (not live throughput)."""
     from signal_ingest.bench import run_benchmark, write_benchmark_artifact
 
     _ = ctx.obj["settings"]
@@ -213,6 +219,31 @@ def bench_cmd(
         path = write_benchmark_artifact(report)
         typer.echo(f"wrote {path}")
     typer.echo(json.dumps(report, indent=2, default=str))
+
+
+@app.command("export-xlsx")
+def export_xlsx_cmd(
+    snapshot: Path = typer.Option(..., "--snapshot", help="Export snapshot dir (6 CSVs + manifest.json)"),
+    out: Optional[Path] = typer.Option(None, "--out", help="Default: <snapshot>/signal_ingest_export.xlsx"),
+) -> None:
+    """Build one six-tab .xlsx (frozen header, filters) from a local export snapshot."""
+    from signal_ingest.export.xlsx import DEFAULT_XLSX_NAME, write_xlsx
+
+    typer.echo(json.dumps(write_xlsx(snapshot, out or snapshot / DEFAULT_XLSX_NAME), indent=2))
+
+
+@app.command("render-pdf")
+def render_pdf_cmd(
+    source: Path = typer.Option(Path("docs/architecture-source.md"), "--source"),
+    out: Path = typer.Option(Path("architecture.pdf"), "--out"),
+) -> None:
+    """Render architecture-source.md to a ≤3-page PDF; print pages and sha256."""
+    from signal_ingest.release.pdf import count_pdf_pages, render_architecture_pdf, sha256_file
+
+    path = render_architecture_pdf(out, source)
+    typer.echo(json.dumps(
+        {"path": str(path), "pages": count_pdf_pages(path), "sha256": sha256_file(path)}, indent=2
+    ))
 
 
 @app.command("qualify")
@@ -233,6 +264,9 @@ def qualify_cmd(
         "--init-db/--no-init-db",
         help="Apply live DB migrations before probes",
     ),
+    run_id: Optional[str] = typer.Option(
+        None, "--run", help="Acquisition run: canary/seeds read its accepted live rows"
+    ),
 ) -> None:
     """B8 live qualification: monitors, bulk pilots, LLM canary (independent tracks)."""
     from signal_ingest.config.settings import Mode
@@ -249,12 +283,41 @@ def qualify_cmd(
         track=track,  # type: ignore[arg-type]
         update_inventory=update_inventory,
         init_database=init_database,
+        run_id=run_id,
     )
     typer.echo(json.dumps(result, indent=2, default=str))
     canary = result.get("canary") or {}
     # Exit 2 when LLM canary cannot succeed — monitors/bulk manifests may still exist.
     if track in {"all", "canary"} and not canary.get("live_llm_success"):
         raise typer.Exit(code=2)
+
+
+@app.command("owner-llm")
+def owner_llm_cmd(
+    ctx: typer.Context,
+    run_id: str = typer.Option(..., "--run"),
+    limit: int = typer.Option(40, "--limit", min=1, help="Max provider-backed extracts"),
+) -> None:
+    """B8: grounded LLM owner fallback for products lacking a deterministic owner."""
+    import asyncio
+
+    from signal_ingest.live.orchestrate import run_owner_llm_fallback
+    from signal_ingest.live.settings import load_live_settings
+
+    settings = load_live_settings()
+    result = asyncio.run(run_owner_llm_fallback(settings, run_id=run_id, limit=limit))
+    typer.echo(json.dumps({k: v for k, v in result.items() if k != "outcomes"}, indent=2, default=str))
+
+
+@app.command("b8-status")
+def b8_status_cmd(ctx: typer.Context) -> None:
+    """B8: recompute counts from the newest live export; rewrite acquisition + blocker."""
+    from signal_ingest.live.canary import write_b8_status
+    from signal_ingest.live.settings import load_live_settings
+
+    body = write_b8_status(load_live_settings())
+    typer.echo(json.dumps(body, indent=2, default=str))
+    raise typer.Exit(code=1 if body.get("blocked") else 0)
 
 
 @app.command("pilot")

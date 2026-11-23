@@ -1,0 +1,19 @@
+source_id: bulk_openalex_paper_metadata
+canonical_publisher: OpenAlex (OurResearch)
+scope: bulk_research_papers
+status: qualified
+documented_access_url: "https://docs.openalex.org/api-entities/works"
+policy_url: "https://api.openalex.org/robots.txt"
+review_date: 2026-11-23
+allowed_text_use: cc0_bibliographic_metadata
+original_time_field: publication_date
+original_timezone: null
+pagination_stop_rule: batch_50_arxiv_dois_per_request_doi_pipe_or_filter
+attribution: "OpenAlex works metadata (CC0) by arXiv DOI 10.48550/arxiv.<id>; repo edges from pwc-archive links-between-paper-and-code"
+domain_governor: api.openalex.org
+fallback: none; papers without an OpenAlex work, title, authors or date are quarantined (missing_paper_metadata)
+reviewer: desk-research
+probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_papers_with_code/openalex_batch_20261122T201456Z.json
+probe_fetch_status: ok
+probe_pilot_count: 1668
+notes: No api_key or mailto sent (no personal data). Anonymous calls share a free daily budget per IP (response meta reported cost_usd 0.0001 per request); about 34 requests per run. Merged preprints are matched via their arXiv location.

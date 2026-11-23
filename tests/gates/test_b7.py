@@ -1159,3 +1159,270 @@ def test_r3_export_freshness_judges_whole_publication_interval():
              "precision": "instant"}
     assert _candidate_to_flat(job(day_only), as_of=as_of, lineage_mode="fixture", run_id="r") is None
     assert _candidate_to_flat(job(exact), as_of=as_of, lineage_mode="fixture", run_id="r") is not None
+
+
+# ---------------------------------------------------------------------------
+# R4 — nearDuplicateOf / suggested_candidates export columns (notes/r4-work-order.md)
+# Offline FakeEmbedder only; synthetic fixture rows, not for live export.
+# ---------------------------------------------------------------------------
+
+R4_TITLES = {
+    "r4-news-a": "Aurora raises 5M seed round led by Acme Ventures",
+    "r4-news-b": "Aurora raises 5M seed round, led by Acme Ventures!",  # near-dup of a
+    "r4-news-c": "Aurora raises 5M seed round led by Acme Capital",  # 0.89 < 0.95
+}
+
+
+def _r4_news_run(conn, settings):
+    from copy import deepcopy
+
+    from signal_ingest.storage.records import create_run
+
+    corpus = b7_api.load_json(B7_FIX / "corpus.json")
+    base = next(i for i in corpus["items"] if i["logical_id"] == "news:aurora-raises-seed")
+    run_id = create_run(conn, settings=settings, metadata={"scenario": "r4_near_dup"})
+    for ext, title in R4_TITLES.items():
+        body = deepcopy(base["body"])
+        body["content"]["title"] = title
+        url = f"https://fixtures.local/b7/news/{ext}"
+        body["content"]["article_url"] = url
+        body["source"]["url"] = url
+        b7_api.insert_accepted_candidate(
+            conn, run_id=run_id, record_type="NEWS", external_id=ext, payload=body,
+            evidence={"body": base["full_text"]},
+        )
+    return run_id
+
+
+def test_r4_near_duplicate_news_flagged_not_dropped(b7_env, tmp_path):
+    """Same-run titles with cosine >= 0.95 get nearDuplicateOf; every row is still exported.
+
+    Detects: near-dups dropped, flag on the wrong row, or threshold too loose (0.89 flagged).
+    """
+    from tests.integration import r4_api
+
+    from signal_ingest.resolution.embed import flag_near_duplicate_news
+    from signal_ingest.storage import connect
+
+    settings = _settings(b7_env)
+    assert r4_api.cosine(R4_TITLES["r4-news-a"], R4_TITLES["r4-news-b"]) >= 0.95
+    assert r4_api.cosine(R4_TITLES["r4-news-a"], R4_TITLES["r4-news-c"]) < 0.95
+    with connect(settings) as conn:
+        run_id = _r4_news_run(conn, settings)
+        assert flag_near_duplicate_news(conn, r4_api.FakeEmbedder(), run_id) == 1
+        conn.commit()
+        statuses = conn.execute(
+            "SELECT external_id, status FROM candidates WHERE run_id = %s ORDER BY external_id",
+            (str(run_id),),
+        ).fetchall()
+        snap = b7_api.build_export_snapshot(conn, run_id=run_id, as_of=AS_OF, settings=settings)
+        conn.commit()
+
+    assert statuses == [(e, "accepted") for e in sorted(R4_TITLES)]
+    news = {r["durableIdentity"]: r for r in snap["tabs"]["News"]}
+    assert set(news) == set(R4_TITLES), "near-duplicate rows must never be dropped"
+    assert news["r4-news-b"]["nearDuplicateOf"] == "r4-news-a"
+    assert not news["r4-news-a"].get("nearDuplicateOf")
+    assert not news["r4-news-c"].get("nearDuplicateOf")
+    assert "nearDuplicateOf" in snap["headers"]["News"]
+
+    (tmp_path / "r4").mkdir()
+    manifest = b7_api.write_snapshot_local(snap, tmp_path / "r4")
+    assert manifest["not_for_live_export"] is True
+    with open(tmp_path / "r4" / "News.csv", encoding="utf-8", newline="") as fh:
+        parsed = list(csv.reader(fh))
+    idx = parsed[0].index("nearDuplicateOf")
+    assert sorted(r[idx] for r in parsed[1:]) == ["", "", "r4-news-a"]
+
+
+def test_r4_no_embedding_export_byte_stable_without_r4_columns(b7_env, tmp_path):
+    """Without embeddings the export headers equal TAB_HEADERS and bytes repeat exactly.
+
+    Detects: R4 columns leaking into fixture exports that never computed embeddings.
+    """
+    from signal_ingest.export.tabs import TAB_HEADERS, TAB_NAMES
+    from signal_ingest.storage import connect
+    from signal_ingest.storage.records import create_run
+
+    settings = _settings(b7_env)
+    corpus = b7_api.load_json(B7_FIX / "corpus.json")
+    with connect(settings) as conn:
+        run_id = create_run(conn, settings=settings, metadata={"scenario": "r4_stable"})
+        b7_api.load_mixed_corpus(conn, run_id=run_id, corpus=corpus)
+        conn.commit()
+        snaps = [
+            b7_api.build_export_snapshot(conn, run_id=run_id, as_of=AS_OF, settings=settings)
+            for _ in range(2)
+        ]
+        conn.commit()
+
+    for snap in snaps:
+        assert snap["headers"] == {n: list(TAB_HEADERS[n]) for n in TAB_NAMES}
+        assert snap["counts"]["Entity Mapping Log"] >= 1
+        for row in snap["tabs"]["Entity Mapping Log"]:
+            assert not row.get("suggested_candidates")
+        for row in snap["tabs"]["News"]:
+            assert not row.get("nearDuplicateOf")
+    dirs = [tmp_path / "s0", tmp_path / "s1"]
+    for snap, d in zip(snaps, dirs, strict=True):
+        d.mkdir()
+        b7_api.write_snapshot_local(snap, d)
+    for tab in TAB_NAMES:
+        name = f"{tab.replace(' ', '_')}.csv"
+        a, b = ((d / name).read_bytes() for d in dirs)
+        assert a == b, tab
+        assert b"suggested_candidates" not in a and b"nearDuplicateOf" not in a
+
+
+def test_r4_mapping_export_carries_suggested_candidates_column(b7_env, tmp_path):
+    """Once embeddings exist, Entity_Mapping_Log.csv gains suggested_candidates; decision unchanged."""
+    from tests.integration import r4_api
+
+    from signal_ingest.resolution import comparison_key
+    from signal_ingest.resolution.mapping import annotate_mapping_suggestions
+    from signal_ingest.storage import connect
+    from signal_ingest.storage.records import create_run
+
+    settings = _settings(b7_env)
+    fake = r4_api.FakeEmbedder()
+    with connect(settings) as conn:
+        try:
+            conn.execute("TRUNCATE source_identities, entities CASCADE")
+            for eid, name in (
+                ("fixture.r4.zephyr", "Zephyr Quantum Robotics"),
+                ("fixture.r4.bluefin", "Bluefin Bakery"),
+            ):
+                conn.execute(
+                    "INSERT INTO entities (id, namespace, canonical_name, lineage_mode, "
+                    "comparison_key) VALUES (%s, 'startup', %s, 'fixture', %s)",
+                    (eid, name, comparison_key(name)),
+                )
+            run_id = create_run(conn, settings=settings, metadata={"scenario": "r4_sugg"})
+            b7_api.insert_mapping_event(
+                conn, run_id=run_id, source_item_id="r4-zephyr",
+                body={"entityType": "startup", "rawName": "Zephyr Quantum Robotics Labs",
+                      "decision": "abstain", "method": "fixture"},
+            )
+            r4_api.embed_entities(conn, fake)
+            assert annotate_mapping_suggestions(conn, fake, run_id=run_id) == 1
+            conn.commit()
+            snap = b7_api.build_export_snapshot(
+                conn, run_id=run_id, as_of=AS_OF, settings=settings
+            )
+        finally:
+            conn.rollback()
+            conn.execute("TRUNCATE resolution_events, source_identities, entities CASCADE")
+            conn.commit()
+
+    assert "suggested_candidates" in snap["headers"]["Entity Mapping Log"]
+    (tmp_path / "m").mkdir()
+    b7_api.write_snapshot_local(snap, tmp_path / "m")
+    with open(tmp_path / "m" / "Entity_Mapping_Log.csv", encoding="utf-8", newline="") as fh:
+        parsed = list(csv.reader(fh))
+    head = parsed[0]
+    row = next(r for r in parsed[1:] if r[head.index("rawName")] == "Zephyr Quantum Robotics Labs")
+    assert row[head.index("decision")] == "abstain"
+    assert row[head.index("canonicalID")] == ""
+    assert row[head.index("suggested_candidates")] == "Zephyr Quantum Robotics (0.87)"
+
+
+# ---------------------------------------------------------------------------
+# R5: XLSX handoff, architecture PDF page cap, bench mode guard
+# ---------------------------------------------------------------------------
+
+
+def _r5_xlsx_snapshot(tmp_path: Path) -> Path:
+    from signal_ingest.export.writer import write_snapshot_local
+
+    rows = [
+        {"content.entityName": '=HYPERLINK("x")', "durableIdentity": "r5-formula"},
+        {"content.entityName": "Ctrl\x01Char", "durableIdentity": "r5-ctrl"},
+        {"content.entityName": "Plain Co", "durableIdentity": "r5-plain"},
+    ]
+    snap_dir = tmp_path / "snap"
+    snap_dir.mkdir()
+    write_snapshot_local(_r3c_snapshot("Startups", rows), snap_dir)
+    return snap_dir
+
+
+def test_r5_xlsx_six_tabs_headers_freeze_filter_and_text_cells(tmp_path):
+    import zipfile
+
+    from openpyxl import load_workbook
+
+    from signal_ingest.export.tabs import TAB_NAMES
+    from signal_ingest.export.xlsx import write_xlsx
+
+    snap_dir = _r5_xlsx_snapshot(tmp_path)
+    out = write_xlsx(snap_dir, tmp_path / "out.xlsx")
+    wb = load_workbook(out["path"])
+    assert wb.sheetnames == list(TAB_NAMES)
+    for tab in TAB_NAMES:
+        with open(snap_dir / f"{tab.replace(' ', '_')}.csv", encoding="utf-8", newline="") as fh:
+            csv_rows = list(csv.reader(fh))
+        ws = wb[tab]
+        assert [c.value for c in ws[1]] == csv_rows[0], tab
+        assert ws.freeze_panes == "A2", tab
+        assert ws.auto_filter.ref == ws.dimensions, (tab, ws.auto_filter.ref, ws.dimensions)
+        assert ws.max_row == len(csv_rows), tab
+
+    ws = wb["Startups"]
+    col = [c.value for c in ws[1]].index("content.entityName")
+    values = [row[col].value for row in ws.iter_rows(min_row=2)]
+    assert values == ['=HYPERLINK("x")', "CtrlChar", "Plain Co"]
+    assert all(row[col].data_type == "s" for row in ws.iter_rows(min_row=2))
+
+    with zipfile.ZipFile(out["path"]) as zf:
+        sheets = [n for n in zf.namelist() if n.startswith("xl/worksheets/sheet")]
+        assert len(sheets) == 6
+        for name in sheets:
+            xml = zf.read(name).decode("utf-8")
+            assert "<f>" not in xml and "<f " not in xml, f"formula element in {name}"
+
+
+def test_r5_xlsx_manifest_row_count_mismatch_raises(tmp_path):
+    from signal_ingest.export.xlsx import write_xlsx
+
+    snap_dir = _r5_xlsx_snapshot(tmp_path)
+    manifest = json.loads((snap_dir / "manifest.json").read_text(encoding="utf-8"))
+    manifest["counts"]["Startups"] = 99
+    (snap_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="Startups"):
+        write_xlsx(snap_dir, tmp_path / "bad.xlsx")
+
+
+def test_r5_pdf_over_three_pages_raises_and_writes_nothing(tmp_path):
+    from signal_ingest.release.pdf import render_architecture_pdf
+
+    src = tmp_path / "long.md"
+    para = "Synthetic filler paragraph for the page cap check. " * 12
+    src.write_text("# Too long\n\n" + "\n\n".join(f"## S{i}\n\n{para}" for i in range(80)), encoding="utf-8")
+    out = tmp_path / "long.pdf"
+    with pytest.raises(ValueError, match="pages"):
+        render_architecture_pdf(out, src)
+    assert not out.exists()
+
+
+def test_r5_real_architecture_source_fits_three_pages_deterministic(tmp_path):
+    from signal_ingest.release.pdf import (
+        ARCHITECTURE_SOURCE_PATH,
+        MAX_PAGES,
+        count_pdf_pages,
+        render_architecture_pdf,
+        sha256_file,
+    )
+
+    source = Path(__file__).resolve().parents[2] / ARCHITECTURE_SOURCE_PATH
+    a = render_architecture_pdf(tmp_path / "a.pdf", source)
+    b = render_architecture_pdf(tmp_path / "b.pdf", source)
+    assert 1 <= count_pdf_pages(a) <= MAX_PAGES == 3
+    assert sha256_file(a) == sha256_file(b)
+
+
+def test_r5_bench_refuses_live_mode(tmp_fixture_env):
+    from signal_ingest.bench.runner import run_benchmark
+    from signal_ingest.config import Mode, load_settings
+
+    live = load_settings(mode=Mode.LIVE)
+    with pytest.raises(RuntimeError, match="fixture mode"):
+        run_benchmark(sizes=(1,), worker_counts=(1,), settings=live, origins=1)
