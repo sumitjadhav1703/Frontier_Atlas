@@ -12,7 +12,7 @@ A 6–8 minute walkthrough for the hiring team. Every scene maps to one of the b
 
 Links:
 - Repo: https://github.com/sumitjadhav1703/Frontier_Atlas
-- Sheet: `<paste your public Google Sheet link>`
+- Sheet: https://docs.google.com/spreadsheets/d/1cNBMMtAjfSz7o9VXdL2qzBd5I7lfzYyLAZNdFOzHi9w/edit?usp=sharing
 - Form: https://forms.gle/3JJhukomumTFueRW7
 
 ---
