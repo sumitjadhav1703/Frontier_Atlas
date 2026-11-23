@@ -215,7 +215,10 @@ class QuotaLedger:
                     reason="run_tokens",
                 )
 
-        day_window = self._take_day(provider, now, requests=requests, tokens=tokens)
+        shared_paid = 0 if cfg.is_local or cfg.is_fake else paid_units
+        day_window = self._take_day(
+            provider, now, requests=requests, tokens=tokens, paid_micros=shared_paid
+        )
         if run is not None:
             run.requests_reserved += requests
             run.tokens_reserved += tokens
@@ -235,8 +238,14 @@ class QuotaLedger:
 
     # -- day bucket: in memory here, PostgreSQL in PgQuotaLedger -------------
 
-    def _take_day(self, provider: str, now: datetime, *, requests: int, tokens: int) -> datetime:
-        """Check and reserve today's capacity; return the window it was taken from."""
+    def _take_day(
+        self, provider: str, now: datetime, *, requests: int, tokens: int, paid_micros: int = 0
+    ) -> datetime:
+        """Check and reserve today's capacity; return the window it was taken from.
+
+        In memory the paid cap is checked in _reserve_locked; ``paid_micros`` is for
+        PgQuotaLedger, which reserves paid spend in the shared row.
+        """
         day = self._ensure_day(provider, now)
         if self._available_requests(day) < requests:
             raise QuotaExhaustedError(
@@ -261,6 +270,7 @@ class QuotaLedger:
         *,
         used_requests: int,
         used_tokens: int,
+        used_paid: int = 0,
     ) -> None:
         """Drop the reservation from its day window and record actual use."""
         day = self.day_buckets.get(reservation.provider)
@@ -321,7 +331,13 @@ class QuotaLedger:
         used_out = reservation.output_tokens if output_tokens is None else output_tokens
         used_tokens = used_in + used_out
 
-        self._settle_day(reservation, used_requests=reservation.requests, used_tokens=used_tokens)
+        paid = reservation.estimated_paid_micros if paid_micros is None else paid_micros
+        self._settle_day(
+            reservation,
+            used_requests=reservation.requests,
+            used_tokens=used_tokens,
+            used_paid=max(0, paid),
+        )
         del self.open_reservations[reservation.reservation_id]
 
         if run is not None:
@@ -330,7 +346,6 @@ class QuotaLedger:
             run.requests_used += reservation.requests
             run.tokens_used += used_tokens
 
-        paid = reservation.estimated_paid_micros if paid_micros is None else paid_micros
         if paid > 0:
             # Still record; paid_spend_cap=0 should have blocked reserve.
             self.paid_spend_used += paid
@@ -384,49 +399,74 @@ class PgQuotaLedger(QuotaLedger):
 
     Every worker process shares one counter per provider/day, so adding
     processes cannot multiply a free-tier quota. Each reservation is one atomic
-    UPDATE ... WHERE remaining >= n. Run windows stay per process.
+    UPDATE ... WHERE remaining >= n. Paid spend is reserved in the same row
+    (paid_spend_micros), so paid_spend_cap holds across processes per
+    provider/day. Run windows stay per process.
     Windows are UTC days; providers that reset at another midnight get a
     conservative overlap, never an overrun.
     """
 
     connect: Any = None  # zero-arg callable returning a psycopg connection
 
-    def _take_day(self, provider: str, now: datetime, *, requests: int, tokens: int) -> datetime:
+    def _take_day(
+        self, provider: str, now: datetime, *, requests: int, tokens: int, paid_micros: int = 0
+    ) -> datetime:
         cfg = self.providers.get(provider) or ProviderQuotaConfig(provider=provider)
         window = self._day_key(now)
+        cap_micros = max(0, self.paid_spend_cap) * 1_000_000
         with self.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO provider_budgets
-                    (provider, window_kind, window_start, requests_limit, tokens_limit)
-                VALUES (%s, 'day', %s, %s, %s)
+                    (provider, window_kind, window_start, requests_limit, tokens_limit,
+                     paid_spend_cap_micros)
+                VALUES (%s, 'day', %s, %s, %s, %s)
                 ON CONFLICT (provider, window_kind, window_start) DO NOTHING
                 """,
-                (provider, window, cfg.requests_per_day, cfg.tokens_per_day),
+                (provider, window, cfg.requests_per_day, cfg.tokens_per_day, cap_micros),
             )
+            # One atomic UPDATE takes requests, tokens and paid spend together, so the
+            # paid cap holds across processes and a failed take leaks nothing.
             row = conn.execute(
                 """
                 UPDATE provider_budgets
                 SET requests_reserved = requests_reserved + %s,
                     tokens_reserved = tokens_reserved + %s,
+                    paid_spend_micros = paid_spend_micros + %s,
                     updated_at = NOW()
                 WHERE provider = %s AND window_kind = 'day' AND window_start = %s
                   AND requests_limit - requests_reserved - requests_used >= %s
                   AND (%s = 0 OR tokens_limit - tokens_reserved - tokens_used >= %s)
+                  AND (%s = 0 OR paid_spend_micros + %s <= %s)
                 RETURNING 1
                 """,
-                (requests, tokens, provider, window, requests, tokens, tokens),
+                (requests, tokens, paid_micros, provider, window, requests, tokens, tokens,
+                 paid_micros, paid_micros, cap_micros),
             ).fetchone()
             if row is None:
                 left = conn.execute(
                     """
-                    SELECT requests_limit - requests_reserved - requests_used
+                    SELECT requests_limit - requests_reserved - requests_used,
+                           tokens_limit - tokens_reserved - tokens_used,
+                           paid_spend_micros
                     FROM provider_budgets
                     WHERE provider = %s AND window_kind = 'day' AND window_start = %s
                     """,
                     (provider, window),
                 ).fetchone()
                 conn.rollback()
+                if (
+                    left is not None
+                    and left[0] >= requests
+                    and (tokens == 0 or left[1] >= tokens)
+                    and paid_micros > 0
+                    and left[2] + paid_micros > cap_micros
+                ):
+                    raise PaidSpendBlockedError(
+                        f"paid spend blocked for {provider} "
+                        f"(shared paid_spend_cap={self.paid_spend_cap})",
+                        provider=provider,
+                    )
                 short_requests = left is None or left[0] < requests
                 raise QuotaExhaustedError(
                     f"daily {'request' if short_requests else 'token'} quota exhausted "
@@ -443,8 +483,16 @@ class PgQuotaLedger(QuotaLedger):
         *,
         used_requests: int,
         used_tokens: int,
+        used_paid: int = 0,
     ) -> None:
         tokens = reservation.input_tokens + reservation.output_tokens
+        cfg = self.providers.get(reservation.provider) or ProviderQuotaConfig(
+            provider=reservation.provider
+        )
+        # Swap the reserved paid estimate for actual spend (release: actual = 0).
+        paid_delta = (
+            0 if cfg.is_local or cfg.is_fake else used_paid - reservation.estimated_paid_micros
+        )
         with self.connect() as conn:
             conn.execute(
                 """
@@ -453,6 +501,7 @@ class PgQuotaLedger(QuotaLedger):
                     tokens_reserved = GREATEST(0, tokens_reserved - %s),
                     requests_used = requests_used + %s,
                     tokens_used = tokens_used + %s,
+                    paid_spend_micros = GREATEST(0, paid_spend_micros + %s),
                     updated_at = NOW()
                 WHERE provider = %s AND window_kind = 'day' AND window_start = %s
                 """,
@@ -461,6 +510,7 @@ class PgQuotaLedger(QuotaLedger):
                     tokens,
                     used_requests,
                     used_tokens,
+                    paid_delta,
                     reservation.provider,
                     reservation.day_window,
                 ),

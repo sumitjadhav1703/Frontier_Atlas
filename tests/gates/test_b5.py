@@ -600,6 +600,47 @@ async def test_r2_pg_quota_shared_across_processes(tmp_fixture_env):
     assert tuple(row) == (1, 10, 0)
 
 
+@pytest.mark.asyncio
+async def test_scale_pg_paid_spend_cap_shared_across_processes(tmp_fixture_env):
+    """Two PgQuotaLedgers (two processes) share one paid_spend_cap via provider_budgets."""
+    import uuid
+
+    from signal_ingest.config import FrozenClock, Mode, load_settings
+    from signal_ingest.llm.errors import PaidSpendBlockedError
+    from signal_ingest.llm.quota import PgQuotaLedger, ProviderQuotaConfig
+    from signal_ingest.storage import connect, init_db
+
+    settings = load_settings(mode=Mode.FIXTURE)
+    init_db(settings)
+    name = f"scale-paid-{uuid.uuid4().hex[:8]}"
+
+    def ledger():
+        led = PgQuotaLedger(paid_spend_cap=1, clock=FrozenClock(FROZEN),
+                            connect=lambda: connect(settings))
+        led.configure(ProviderQuotaConfig(provider=name, billing_enabled=True))
+        return led
+
+    def spent() -> int:
+        with connect(settings) as conn:
+            return int(conn.execute(
+                "SELECT paid_spend_micros FROM provider_budgets WHERE provider = %s", (name,)
+            ).fetchone()[0])
+
+    a, b = ledger(), ledger()
+    held = await a.reserve(name, input_tokens=1, estimated_paid_micros=600_000)
+    # Each process alone is under its cap; together they would be 1.2 USD > 1 USD.
+    with pytest.raises(PaidSpendBlockedError):
+        await b.reserve(name, input_tokens=1, estimated_paid_micros=600_000)
+    assert spent() == 600_000
+    await a.commit(held, paid_micros=500_000)  # actual spend replaces the estimate
+    assert spent() == 500_000
+    r = await b.reserve(name, input_tokens=1, estimated_paid_micros=500_000)  # exactly at cap
+    with pytest.raises(PaidSpendBlockedError):
+        await a.reserve(name, input_tokens=1, estimated_paid_micros=1)
+    await b.release(r)
+    assert spent() == 500_000
+
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -763,3 +804,14 @@ def test_meta_tier_is_third_in_live_chain_config():
 
     order = inspect.signature(build_chain).parameters["order"].default
     assert order.index("gemini") < order.index("groq") < order.index("meta")
+
+
+def test_b9_chain_input_cap_leaves_every_tier_its_output_reserve():
+    """Chain max_input = min over tiers of (max_input - reserved_output), so a chunk planned at the
+    chain cap plus the chain's output reserve never trips a tier's pre-call size check."""
+    a = b5_api.tier("gemini", limits_obj=b5_api.limits("gemini", max_input_tokens=4000, reserved_output_tokens=1000))
+    b = b5_api.tier("groq", limits_obj=b5_api.limits("groq", max_input_tokens=3000, reserved_output_tokens=500))
+    lim = b5_api.chain([a, b]).limits
+    assert lim.max_input_tokens == 2500 and lim.reserved_output_tokens == 500
+    for t in (a, b):
+        assert lim.max_input_tokens + lim.reserved_output_tokens <= t.limits.max_input_tokens

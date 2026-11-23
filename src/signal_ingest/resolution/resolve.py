@@ -66,6 +66,7 @@ def resolve(
         field=candidate.field,
         raw_value=candidate.raw_name,
         rule_version=reg.rule_version or RULE_VERSION,
+        run_id=candidate.run_id,
     )
 
     try:

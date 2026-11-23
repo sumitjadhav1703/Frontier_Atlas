@@ -1456,12 +1456,80 @@ def test_b9_export_record_type_canonical_names_and_role_labels():
             assert headers[:2] == ("schemaVersion", "recordType"), tab
     assert display_role_family("ml_engineering") == "ML Engineering"
     assert display_role_family("customer_success") == "Customer Success"
-    cand = {"status": "accepted", "record_type": "PRODUCT", "external_id": "chatgpt",
+    from signal_ingest.resolution.mapping import mapping_observation_key
+
+    cand = {"status": "accepted", "record_type": "PRODUCT", "external_id": "chatgpt", "semantic_key": "sk-chatgpt",
             "payload": {"schemaVersion": "1.0", "content": {"startupName": "OpenAI, Inc.", "pricingModel": "FREEMIUM"}}}
+    obs = mapping_observation_key(source_item_id="sk-chatgpt", field="startupName", raw_value="OpenAI, Inc.", run_id="r")
     flat = _candidate_to_flat(cand, as_of=datetime(2026, 11, 23, tzinfo=timezone.utc), lineage_mode="fixture",
-                              run_id="r", canonical_names={"OpenAI, Inc.": "OpenAI"})
+                              run_id="r", canonical_names={obs: "OpenAI"})
     assert flat["recordType"] == "PRODUCT"
     assert flat["content.startupName"] == "OpenAI" and flat["content.startupNameRaw"] == "OpenAI, Inc."
     unmatched = _candidate_to_flat(cand, as_of=datetime(2026, 11, 23, tzinfo=timezone.utc), lineage_mode="fixture",
                                    run_id="r", canonical_names={})
     assert unmatched["content.startupName"] == "OpenAI, Inc."  # no match: source string kept
+
+
+def test_b9_canonical_name_only_from_that_mentions_own_match(b7_env):
+    """Two mentions with the same raw "Mercury": one matched, one abstained. Only the matched
+    mention gets the canonical name; the export reads inside one REPEATABLE READ snapshot.
+
+    Detects: canonical names keyed by raw string leaking a match onto an abstained mention.
+    """
+    from signal_ingest.resolution.mapping import mapping_observation_key, record_resolution_event
+    from signal_ingest.resolution.types import DecisionKind, Namespace, ResolveDecision
+    from signal_ingest.resolution.versions import RULE_VERSION
+    from signal_ingest.storage import connect
+    from signal_ingest.storage.records import create_run
+
+    settings = _settings(b7_env)
+    with connect(settings) as conn:
+        try:
+            run_id = create_run(conn, settings=settings, metadata={"scenario": "b9_mercury"})
+            for ext, kind, canon in (("mercury-bank", DecisionKind.MATCH, "Mercury Technologies"),
+                                     ("mercury-other", DecisionKind.ABSTAIN, None)):
+                b7_api.insert_accepted_candidate(
+                    conn, run_id=run_id, record_type="PRODUCT", external_id=ext,
+                    payload={"schemaVersion": "1.0", "content": {"startupName": "Mercury", "productName": ext}},
+                )
+                record_resolution_event(conn, ResolveDecision(
+                    decision=kind, canonical_name=canon, canonical_id="fixture.mercury" if canon else None,
+                    method="fixture", rule_version=RULE_VERSION, raw_name="Mercury", comparison_key="mercury",
+                    namespace=Namespace.STARTUP,
+                    observation_key=mapping_observation_key(
+                        source_item_id=f"b7.fixture:PRODUCT:{ext}", field="startupName",
+                        raw_value="Mercury", rule_version=RULE_VERSION, run_id=str(run_id)),
+                ), run_id=run_id)
+            conn.commit()
+            snap = b7_api.build_export_snapshot(conn, run_id=run_id, as_of=AS_OF, settings=settings)
+            assert conn.info.transaction_status.name == "IDLE"  # snapshot transaction closed
+        finally:
+            conn.rollback()
+            conn.execute("TRUNCATE resolution_events CASCADE")
+            conn.commit()
+
+    names = {r["durableIdentity"]: r["content.startupName"] for r in snap["tabs"]["Products"]}
+    assert names["mercury-bank"] == "Mercury Technologies"
+    assert names["mercury-other"] == "Mercury"
+
+
+
+def test_b9_cli_status_lines_go_to_stderr_stdout_stays_json(b7_env, monkeypatch):
+    """`bench --write` "wrote <path>" and `init-db` status are stderr; stdout parses as JSON / is empty."""
+    from typer.testing import CliRunner
+
+    import signal_ingest.bench as bench
+
+    for k, v in b7_env["child_env"].items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setattr(bench, "run_benchmark", lambda: {"waves": []})
+    monkeypatch.setattr(bench, "write_benchmark_artifact", lambda report: "/tmp/b7_benchmark.json")
+    runner = CliRunner()
+    app = b7_api.load_cli_app()
+    out = runner.invoke(app, ["--mode", "fixture", "bench", "--write"], catch_exceptions=False)
+    assert out.exit_code == 0, out.output
+    assert json.loads(out.stdout) == {"waves": []}
+    assert "wrote /tmp/b7_benchmark.json" in out.stderr
+    init = runner.invoke(app, ["--mode", "fixture", "init-db"], catch_exceptions=False)
+    assert init.exit_code == 0, init.output
+    assert init.stdout == "" and "igrations" in init.stderr

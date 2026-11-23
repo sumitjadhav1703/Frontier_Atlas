@@ -16,7 +16,8 @@ _REMOTE_TRUE = re.compile(
     re.IGNORECASE,
 )
 _REMOTE_FALSE = re.compile(
-    r"\b(on[- ]site\s+only|hybrid\s+only|in[- ]office\s+only|no\s+remote)\b",
+    r"\b(on[- ]site\s+only|hybrid\s+only|in[- ]office\s+only|no\s+remote"
+    r"|not\s+(?:a\s+)?remote|non[- ]remote|remote:\s*no)\b",
     re.IGNORECASE,
 )
 _DATE_ISO = re.compile(r"\b(\d{4}-\d{2}-\d{2})([Tt ]\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:?\d{2})?)?\b")
@@ -144,7 +145,10 @@ def value_supported_by_quote(field: str, value: Any, quote: str) -> bool:
     if field in _EXTRACTIVE_TEXT_FIELDS:
         return _contains_phrase(q, str(value))
     if field == "is_remote":
-        return bool(_REMOTE_ANY.search(q) if value else _ONSITE_ANY.search(q))
+        if value:
+            # "not remote" / "non-remote" mention the word but negate it.
+            return bool(_REMOTE_ANY.search(q)) and not _REMOTE_FALSE.search(q)
+        return bool(_ONSITE_ANY.search(q))
     if field in {"date", "published_date"}:
         return _date_in_quote(str(value), q)
     if field == "pricingModel":

@@ -40,6 +40,7 @@ from signal_ingest.crawl.queue import (
     complete_with_blob,
     enqueue_task,
     get_checkpoint,
+    lock_fenced_task,
     schedule_retry,
     upsert_checkpoint,
 )
@@ -346,6 +347,9 @@ def process_parse_stage(
         result.evidence.setdefault("listing", row["_listing"])
 
     with conn.transaction():
+        # Fence: a reclaimed (stale) lease must not write a candidate or quarantine.
+        if not lock_fenced_task(conn, task):
+            return {"ok": False, "stage": STAGE_PARSE, "stale_lease": True}
         obs_id = UUID(str(obs_row["id"])) if obs_row.get("id") else None
         if not result.ok:
             insert_quarantine(
@@ -892,7 +896,8 @@ def _raw_from_observation_row(
     content_key = obs_row.get("content_key")
     content_sha = obs_row.get("content_sha256")
     if content_key or content_sha:
-        store = RawStore.from_settings(settings or get_settings())
+        cfg = settings or get_settings()
+        store = RawStore.from_settings(cfg)
         try:
             if content_sha and store.exists(content_sha):
                 body = store.read(content_sha)
@@ -900,6 +905,9 @@ def _raw_from_observation_row(
                 body = store.read_key(content_key)
         except FileNotFoundError:
             body = None
+        if body is None and cfg.mode.value == "live":
+            # Live: raise so the work loop retries; never quarantine a real item as empty.
+            raise FileNotFoundError(f"raw blob missing: {content_key or content_sha}")
     # Fixture: reconstruct from task payload when blob missing.
     if body is None and task.payload.get("row") is not None:
         body = json.dumps(

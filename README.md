@@ -9,11 +9,11 @@ A resumable ingestion pipeline for AI startups, products, research papers, jobs 
 | Startups | 1,906 | yc-oss `tags/ai.json` (YC company directory mirror) |
 | Products | 1,195 | AgiPicks open dataset (CC BY 4.0): pricing from its attributed field, owner from the vendor's own homepage. OpenRouter public model directory: owner and pricing from the listing |
 | Research Papers | 1,656 | pwc-archive paper→code links (official repos only), OpenAlex metadata (CC0), GitHub REST stars |
-| Jobs | 8 | 24 h fresh at cutoff 2026-11-23T08:17:39Z. Exact `publishedAt` from the Ashby feed (25 AI-company boards). Remote flag is source-backed (4 rows) or LLM-extracted and quote-grounded (4 rows); 5 AI job boards monitored |
+| Jobs | 7 | 24 h fresh at cutoff 2026-11-23T08:53:50Z. Exact `publishedAt` from the Ashby feed (25 AI-company boards). Remote flag is source-backed (3 rows) or LLM-extracted and quote-grounded (4 rows); 5 AI job boards monitored |
 | News | 15 | 24 h fresh at the same cutoff, full article text: Guardian, TechCrunch, MIT News, ScienceDaily (Ars Technica detail blocked by WAF) |
 | Entity Mapping Log | 3,109 | raw name → canonical ID, method, decision, embedding suggestions. Products and Jobs export the canonical name (raw string kept in `…Raw`) |
 
-Offline gates B0–B8 pass: 381 cumulative cases under `TZ=UTC` and `TZ=Asia/Kolkata`. Entity resolution on the gate set scores precision 1.0 / recall 1.0 (FP 0).
+Offline gates B0–B8 pass: 395 cumulative cases under `TZ=UTC` and `TZ=Asia/Kolkata`. Entity resolution on the gate set scores precision 1.0 / recall 1.0 (FP 0).
 
 ## Architecture
 
@@ -41,6 +41,7 @@ sources ─▶ discover ─▶ PostgreSQL task queue (SKIP LOCKED leases, fencin
   - pgvector (bge-small, HNSW) only proposes `suggested_candidates`; it never merges.
 - **Freshness**: a news/job row is exported only if its whole publication interval lies inside [cutoff − 24 h, cutoff]. Relative dates ("2 hours ago") are anchored to the listing fetch time. A row with no date can be flagged "new since last run" but is never exported as fresh.
 - **Self-healing**: lease heartbeat, reaper, dead-letter + `requeue-failed`, SIGTERM drain. In the measured kill -9 recovery, 12/12 tasks were done in 11.2 s with 0 duplicate observations.
+- **Horizontal scaling**: any number of `work` processes, on one or many machines, share one PostgreSQL queue. Claims use SKIP LOCKED, every write is fenced (fetch and parse), and unique keys prevent duplicates. LLM quota and the billed-spend cap are enforced in PostgreSQL across processes. `scripts/demo_two_workers.sh` runs 2 workers on 300 tasks and `kill -9`s one mid-run: 300/300 done, 300 observations for 300 distinct tasks. Limits: across machines, `SIGNAL_INGEST_RAW_ROOT_LIVE` must be a shared absolute mount (a missing blob is retried, not quarantined). Per-site pacing is per process (`SIGNAL_INGEST_ORIGIN_CONCURRENCY` / `_MIN_INTERVAL_S`), so the site rate is that limit × workers; the upgrade is a shared token bucket.
 - Full design: [architecture.pdf](architecture.pdf) (3 pages), source [docs/architecture-source.md](docs/architecture-source.md).
 
 ## Setup

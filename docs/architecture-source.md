@@ -83,10 +83,11 @@ LangGraph extraction graph: `budget → segment → cache_lookup → plan → ca
 - Lease fencing tokens: a stale worker cannot commit after its lease is reclaimed. A crash after the blob write and before commit reuses the content hash.
 - Self-healing: heartbeat renewal, reaper (retry or dead-letter at max attempts), pooled connections replaced when dropped, backoff on DB errors, SIGTERM drains in-flight work.
 - Measured recovery (`artifacts/gates/r1_kill9_demo.txt`): after `kill -9` mid-run, 4 leased + 8 ready tasks were reclaimed; the healer finished 12/12 in 11.2 s with 0 duplicate observations.
+- Horizontal workers (`scripts/demo_two_workers.sh`): 2 processes on 300 tasks; `kill -9` A at 3 s; B reaped A's leases. Result: 300/300 done, observations 300 = distinct tasks 300. Parse writes are fenced like fetch writes. LLM quota and billed spend live in PostgreSQL. Per-site pacing is per process (limit × workers; upgrade: shared token bucket). Multiple machines need a shared raw-store mount.
 
 ### Freshness
 
-Export cutoff T. A news or job row is admitted only if its whole publication interval lies within [T − 24h, T]. Original structured dates are preferred; conflicts go to quarantine. Release cutoff: 2026-11-23T08:17:39Z (13:47:39 IST). Star snapshot age at cutoff: about 12 h (stars observed 2026-11-22 ≈20:20Z).
+Export cutoff T. A news or job row is admitted only if its whole publication interval lies within [T − 24h, T]. Original structured dates are preferred; conflicts go to quarantine. Release cutoff: 2026-11-23T08:53:50Z (14:23:50 IST). Star snapshot age at cutoff: about 12.5 h (stars observed 2026-11-22 ≈20:20Z).
 
 ### Anti-bot and JS-heavy sources
 
@@ -102,10 +103,10 @@ Structured feeds and APIs come first (every class in this run). One polite clien
 
 | Item | Value |
 | --- | --- |
-| Rows per tab at release | Startups 1,906 · Products 1,195 · Research Papers 1,656 · Jobs 8 · News 15 · Entity Mapping Log 3,109 |
+| Rows per tab at release | Startups 1,906 · Products 1,195 · Research Papers 1,656 · Jobs 7 · News 15 · Entity Mapping Log 3,109 |
 | Bulk classes ≥ 1,000 rows | Yes, recomputed from the export CSVs by `b8-status` (unique durableIdentity, lineageMode=live) |
 | Entity resolution precision / recall | 1.00 / 1.00 on the 27-case gate set (TP 15, FP 0, FN 0, 10 abstentions). Live: 103 seeds (50 YC + 53 OpenRouter-attributed labs), 3,109 mentions → 392 match, 863 abstain, 1,854 new; Products/Jobs export the matched canonical name, with the raw string kept |
 | Grounded LLM rows | 2 product owners and 4 job remote flags extracted by Gemini, each quote-grounded. For example `agent-crm` → "Agent CRM" (`author: Agent CRM`), and OpenAI postings → is_remote=false ("hybrid work model of 3 days in the office"); 2 ungrounded claims were rejected. All tiers (Gemini, Groq, Meta) verified live |
-| Source scans complete / partial | Bulk: 4/4 complete. Monitors: 10 configured; 15 fresh news rows (Guardian, TechCrunch, MIT News, ScienceDaily). Jobs: 8 fresh via the Ashby feed (25 AI-company boards), 4 of them with an LLM-extracted remote flag |
+| Source scans complete / partial | Bulk: 4/4 complete. Monitors: 10 configured; 15 fresh news rows (Guardian, TechCrunch, MIT News, ScienceDaily). Jobs: 7 fresh via the Ashby feed (25 AI-company boards), 4 of them with an LLM-extracted remote flag |
 
 **Known gaps.** Ars Technica article pages sit behind an AWS WAF captcha (not bypassed). aijobs.net robots disallows `/job/`. One AI-community board renders client-side. aiworkportal postings have no publish time. inferencejobs and 495 Ashby postings lack a source-backed remote flag (quarantined, not guessed). Paper dates are kept only inside the arXiv v1 month, else `YYYY-MM`. Three relaunch duplicates remain among products (1,192 unique).

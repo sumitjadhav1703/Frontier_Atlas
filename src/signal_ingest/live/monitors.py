@@ -467,7 +467,7 @@ async def dry_probe_monitors(settings: Settings) -> list[dict[str, Any]]:
     pool = HttpPool(PoolLimits(user_agent="signal-ingest/0.1 (+assessment)"))
     rows: list[dict[str, Any]] = []
     try:
-        for cfg in load_monitor_configs():
+        for cfg in load_monitor_configs(include_feeds=True):
             if (cfg.raw or {}).get("ashby_orgs"):
                 rows.append(await _dry_probe_ashby(settings, cfg, now))
                 continue

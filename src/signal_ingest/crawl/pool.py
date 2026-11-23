@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 import zlib
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping
 from urllib.parse import urlsplit
 
@@ -25,8 +26,13 @@ class BodyTooLargeError(RuntimeError):
 class PoolLimits:
     max_active: int = 8
     max_pending: int = 32
-    per_origin_concurrency: int = 2
-    per_origin_min_interval_s: float = 0.05
+    # shortcut: per-process limits; effective site rate = limit x workers; upgrade = shared DB token bucket
+    per_origin_concurrency: int = field(
+        default_factory=lambda: int(os.environ.get("SIGNAL_INGEST_ORIGIN_CONCURRENCY", "2"))
+    )
+    per_origin_min_interval_s: float = field(
+        default_factory=lambda: float(os.environ.get("SIGNAL_INGEST_ORIGIN_MIN_INTERVAL_S", "0.05"))
+    )
     connect_timeout_s: float = 5.0
     read_timeout_s: float = 15.0
     overall_timeout_s: float = 30.0

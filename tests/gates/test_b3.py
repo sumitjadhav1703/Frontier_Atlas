@@ -1440,6 +1440,11 @@ def test_b9_ashby_board_rows_and_job_rules():
     assert A.parse_detail(_ashby_raw(rows[1])).payload["content"]["is_remote"] is True
     unknown = A.parse_detail(_ashby_raw(rows[2]))
     assert unknown.quarantine_reason == "remote_unspecified"
+    # No workplaceType: isRemote=False is trusted; isRemote=True may be a hybrid role, so unspecified.
+    assert A.remote_flag({"workplaceType": None, "isRemote": False}) == (False, "isRemote")
+    assert A.remote_flag({"isRemote": True}) == (None, "none")
+    loose = A.parse_detail(_ashby_raw({**base, "id": "5", "isListed": True, "workplaceType": None, "isRemote": True}))
+    assert loose.quarantine_reason == "remote_unspecified"
 
 
 def test_b9_extra_job_feed_routes_through_monitor_pipeline():
@@ -1473,3 +1478,63 @@ def test_b9_ashby_llm_remote_only_fills_missing_flag():
                                  llm_remote=llm)
     assert source_wins.payload["content"]["is_remote"] is False  # source flag beats the model
     assert A.parse_detail(_ashby_raw({**base, "id": "11"})).quarantine_reason == "remote_unspecified"
+
+
+def test_b9_job_remote_llm_skips_accepted_anchors_at_listing_and_caps_failures(monitor_env, monkeypatch):
+    """run_job_remote_llm: postings with an accepted JOB are not re-sent, freshness is judged at
+    list_observed_at (not wall clock), and extract() errors stop after 5 in a row.
+
+    Detects: re-spending quota on accepted postings, wall-clock windows, one error aborting the run.
+    """
+    import asyncio
+    from uuid import uuid4
+
+    from signal_ingest.live import orchestrate
+    from signal_ingest.storage import connect
+    from signal_ingest.storage.records import create_run
+    from tests.integration import b7_api
+
+    settings = monitor_env
+    calls: list[str] = []
+
+    async def failing_extract(candidate, chain):
+        calls.append(candidate.candidate_id)
+        raise RuntimeError("quota")
+
+    monkeypatch.setattr(orchestrate, "assert_live_mode", lambda _s: None)
+    monkeypatch.setattr("signal_ingest.llm.extract", failing_extract)
+    with connect(settings) as conn:
+        run_id = create_run(conn, settings=settings, metadata={"scenario": "b9_job_remote"})
+        for n in range(1, 9):
+            # acme:8 was listed 30h after publication: stale at observation time.
+            observed = "2025-01-02T16:00:00+00:00" if n == 8 else "2025-01-01T20:00:00+00:00"
+            row = {"id": str(n), "org": "acme", "publishedAt": "2025-01-01T10:00:00+00:00",
+                   "descriptionPlain": "Hybrid or remote, details on request.", "_listing": {"url": "u"}}
+            conn.execute(
+                "INSERT INTO tasks (id, source_id, stage, url, semantic_key, external_id, run_id, payload, last_error) "
+                "VALUES (%s, 'jobs_ashby_ai', 'parse', 'https://jobs.ashbyhq.com/acme', %s, %s, %s, %s, 'remote_unspecified')",
+                (str(uuid4()), f"b9-remote:{run_id}:{n}", f"acme:{n}", str(run_id),
+                 json.dumps({"row": row, "list_observed_at": observed})),
+            )
+        b7_api.insert_accepted_candidate(conn, run_id=run_id, record_type="JOB", external_id="acme:1",
+                                         payload={"content": {"company": "Acme AI"}}, source_id="jobs_ashby_ai")
+        conn.commit()
+
+    out = asyncio.run(orchestrate.run_job_remote_llm(settings, run_id=str(run_id), provider=object()))
+    assert out["fresh_unspecified"] == 6  # acme:1 already accepted, acme:8 stale at listing time
+    assert calls == ["acme:2", "acme:3", "acme:4", "acme:5", "acme:6"]  # stopped after 5 failures
+    assert [o["status"] for o in out["outcomes"]] == ["error"] * 5
+    assert out["outcomes"][0]["error"] == "RuntimeError"
+
+
+def test_b9_dry_probe_includes_feed_sources(monitor_env, monkeypatch):
+    """dry_probe_monitors probes the extra job feeds too (load_monitor_configs(include_feeds=True))."""
+    import asyncio
+
+    import signal_ingest.adapters.monitors.config as monitor_config
+    from signal_ingest.live import monitors as live_monitors
+
+    seen: list[dict] = []
+    monkeypatch.setattr(monitor_config, "load_monitor_configs", lambda *a, **kw: seen.append(kw) or [])
+    assert asyncio.run(live_monitors.dry_probe_monitors(monitor_env)) == []
+    assert seen == [{"include_feeds": True}]

@@ -379,12 +379,19 @@ class LiteLLMChain:
             elif name not in self.skipped:
                 # A skipped tier's deployment is never routed to; anything else must be quota-mapped.
                 raise ValueError(f"router deployment {name!r} is not mapped to a quota tier")
+        # The hook refuses input + max_output > a tier's max_input, so plan chunks that fit every
+        # usable tier; a tier whose output reserve eats its whole input cap is skipped anyway.
+        usable = [
+            t.limits.max_input_tokens - t.limits.reserved_output_tokens
+            for t in self._tiers
+            if t.limits.max_input_tokens > t.limits.reserved_output_tokens
+        ]
         self._limits = ProviderLimits(
             provider="chain",
             model=">".join(names),
             context_tokens=min(t.limits.context_tokens for t in self._tiers),
             reserved_output_tokens=min(t.limits.reserved_output_tokens for t in self._tiers),
-            max_input_tokens=min(t.limits.max_input_tokens for t in self._tiers),
+            max_input_tokens=min(usable) if usable else min(t.limits.max_input_tokens for t in self._tiers),
             max_request_bytes=min(t.limits.max_request_bytes for t in self._tiers),
             safety_margin_tokens=max(t.limits.safety_margin_tokens for t in self._tiers),
             framing_tokens=max(t.limits.framing_tokens for t in self._tiers),

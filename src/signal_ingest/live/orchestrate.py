@@ -313,12 +313,21 @@ async def run_owner_llm_fallback(
     return summary
 
 
-async def run_job_remote_llm(settings: Any, *, run_id: str, limit: int = 60, max_age_hours: float = 24.0) -> dict[str, Any]:
+async def run_job_remote_llm(
+    settings: Any,
+    *,
+    run_id: str,
+    limit: int = 60,
+    max_age_hours: float = 24.0,
+    max_consecutive_failures: int = 5,
+    provider: Any = None,
+) -> dict[str, Any]:
     """Grounded LLM is_remote for fresh Ashby postings that carry no source remote flag.
 
     The posting text is the employer's own page, so extract() runs without a target entity;
     the quote must still sit in the posting and contain remote/on-site wording (validator).
-    Only ACCEPTED evidence turns a remote_unspecified posting into a JOB row.
+    Only ACCEPTED evidence turns a remote_unspecified posting into a JOB row. Postings that
+    already have an accepted JOB are skipped; freshness is judged at the listing observation.
     """
     import json as _json
     from datetime import datetime, timedelta, timezone
@@ -327,53 +336,82 @@ async def run_job_remote_llm(settings: Any, *, run_id: str, limit: int = 60, max
     from signal_ingest.adapters.monitors import jobs_ashby_ai as ashby
     from signal_ingest.crawl.types import FetchOutcomeKind, RawObservation
     from signal_ingest.llm import ExtractCandidate, extract
-    from signal_ingest.llm.providers_config import build_chain
     from signal_ingest.storage.db import connect
 
-    load_env_keys()
-    now = datetime.now(timezone.utc)
-    chain = build_chain()
+    def _ts(value: Any) -> datetime | None:
+        try:
+            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+    assert_live_mode(settings)
+    if provider is None:
+        load_env_keys()
+        from signal_ingest.llm.providers_config import build_chain
+
+        provider = build_chain(connect=lambda: connect(settings))
+    chain = provider
     outcomes: list[dict[str, Any]] = []
     with connect(settings) as conn:
         rows = conn.execute(
-            "SELECT id, external_id, payload FROM tasks WHERE run_id = %s AND source_id = %s "
-            "AND stage = 'parse' AND last_error = 'remote_unspecified' ORDER BY external_id",
+            """
+            SELECT t.id, t.external_id, t.payload FROM tasks t
+            WHERE t.run_id = %s AND t.source_id = %s
+              AND t.stage = 'parse' AND t.last_error = 'remote_unspecified'
+              AND NOT EXISTS (
+                SELECT 1 FROM candidates c
+                WHERE c.source_id = t.source_id AND c.record_type = 'JOB'
+                  AND c.external_id = t.external_id AND c.status = 'accepted')
+            ORDER BY t.external_id
+            """,
             (str(run_id), ashby.SOURCE_ID),
         ).fetchall()
+        conn.commit()
         fresh = []
         for task_id, external_id, payload in rows:
             row = (payload or {}).get("row") or {}
-            try:
-                published = datetime.fromisoformat(str(row.get("publishedAt")).replace("Z", "+00:00"))
-            except ValueError:
+            published = _ts(row.get("publishedAt"))
+            observed = _ts((payload or {}).get("list_observed_at") or (row.get("_listing") or {}).get("fetched_at"))
+            if published is None or observed is None:
                 continue
-            if timedelta(0) <= now - published <= timedelta(hours=max_age_hours) and row.get("descriptionPlain"):
-                fresh.append((task_id, external_id, row))
-        for task_id, external_id, row in fresh[:limit]:
+            if timedelta(0) <= observed - published <= timedelta(hours=max_age_hours) and row.get("descriptionPlain"):
+                fresh.append((task_id, external_id, row, observed))
+        failures = 0
+        for task_id, external_id, row, observed in fresh[:limit]:
+            if failures >= max_consecutive_failures:
+                break
             text = f"{row.get('title') or ''}\nLocation: {row.get('location') or ''}\n\n{row.get('descriptionPlain')}"
-            result = await extract(
-                ExtractCandidate(candidate_id=str(external_id), record_type="JOB", text=text,
-                                 fields_requested=("is_remote",), source_url=row.get("jobUrl")),
-                chain,
-            )
+            try:
+                result = await extract(
+                    ExtractCandidate(candidate_id=str(external_id), record_type="JOB", text=text,
+                                     fields_requested=("is_remote",), source_url=row.get("jobUrl")),
+                    chain,
+                )
+            except Exception as exc:  # provider/quota failure: record, stop after N in a row
+                failures += 1
+                outcomes.append({"external_id": external_id, "status": "error", "accepted": False,
+                                 "error": f"{type(exc).__name__}"[:80]})
+                continue
+            failures = 0
             ev = result.fields.get("is_remote")
             attempts = [a.__dict__ for a in getattr(chain, "last_attempts", [])]
-            provider = next((a["tier"] for a in reversed(attempts) if a.get("status") == "ok"), None)
+            provider_name = next((a["tier"] for a in reversed(attempts) if a.get("status") == "ok"), None)
             accepted = ev is not None and ev.decision.value == "accepted" and isinstance(ev.value, bool)
             outcome = {"external_id": external_id, "status": result.status.value, "accepted": accepted,
                        "value": ev.value if ev else None, "reason": ev.reason if ev else result.reason,
-                       "provider": provider}
+                       "provider": provider_name}
             if accepted:
                 listing = row.get("_listing") or {}
                 raw = RawObservation(
                     request_url=str(listing.get("url") or ""), final_url=str(listing.get("url") or ""),
                     status_code=200, outcome=FetchOutcomeKind.OK, body=_json.dumps({"row": row}).encode("utf-8"),
-                    content_type="application/json", fetched_at=now,
+                    content_type="application/json", fetched_at=observed,
                 )
-                model = next((t.litellm_model for t in chain.tiers if t.name == provider), None)
-                parsed = ashby.parse_detail(raw, cutoff=now, llm_remote={
+                model = next((t.litellm_model for t in getattr(chain, "tiers", []) if t.name == provider_name), None)
+                parsed = ashby.parse_detail(raw, cutoff=observed, llm_remote={
                     "value": ev.value, "quote": ev.quote, "segment_ids": list(ev.segment_ids),
-                    "provider": provider, "model": model})
+                    "provider": provider_name, "model": model})
                 if parsed.ok:
                     upsert_candidate(
                         conn, source_id=ashby.SOURCE_ID, record_type="JOB", external_id=parsed.external_id,

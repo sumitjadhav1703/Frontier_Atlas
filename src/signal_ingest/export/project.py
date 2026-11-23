@@ -10,6 +10,7 @@ from typing import Any
 from uuid import UUID
 
 import psycopg
+from psycopg.pq import TransactionStatus
 from psycopg.rows import dict_row
 
 from signal_ingest.config.settings import Mode, Settings, get_settings
@@ -26,12 +27,13 @@ from signal_ingest.export.tabs import (
 )
 from signal_ingest.freshness.interval import PublicationInterval
 from signal_ingest.freshness.window import in_freshness_window
-from signal_ingest.resolution.mapping import decision_to_mapping_log
+from signal_ingest.resolution.mapping import decision_to_mapping_log, mapping_observation_key
 from signal_ingest.resolution.types import (
     DecisionKind,
     Namespace,
     ResolveDecision,
 )
+from signal_ingest.resolution.versions import RULE_VERSION
 
 
 _OPTIONAL_COLUMNS = (
@@ -92,17 +94,32 @@ def display_role_family(value: Any) -> str:
     return " ".join(_ROLE_ACRONYMS.get(w.lower(), w.capitalize()) for w in words if w)
 
 
-def _canonical_name_map(conn: psycopg.Connection, run_id: Any) -> dict[str, str]:
-    """raw name -> canonical name for unambiguous resolution matches in this run."""
+def _canonical_name_map(conn: psycopg.Connection, run_id: Any) -> tuple[dict[str, str], tuple[str, ...]]:
+    """observation key -> canonical name for this run's matches, plus the rule versions seen."""
     rows = conn.execute(
-        "SELECT raw_name, canonical_name FROM resolution_events "
+        "SELECT observation_key, canonical_name, rule_version FROM resolution_events "
         "WHERE run_id = %s AND decision = 'match' AND canonical_name IS NOT NULL",
         (str(run_id),),
     ).fetchall()
-    seen: dict[str, set[str]] = {}
-    for raw, canon in rows:
-        seen.setdefault(str(raw), set()).add(str(canon))
-    return {raw: next(iter(c)) for raw, c in seen.items() if len(c) == 1}
+    return {str(k): str(c) for k, c, _ in rows}, tuple(sorted({str(v) for _, _, v in rows}))
+
+
+def _mention_observation_key(
+    candidate: dict[str, Any], content: dict[str, Any], *, run_id: str, rule_version: str
+) -> str | None:
+    """Same key run_resolution.run_mentions + resolve() record for this candidate's owner name."""
+    field = {"PRODUCT": "startupName", "JOB": "company"}.get(str(candidate.get("record_type") or ""))
+    raw = content.get("startupName")
+    raw = content.get("company") if raw is None else raw
+    if field is None or not str(raw or "").strip():
+        return None
+    return mapping_observation_key(
+        source_item_id=str(candidate.get("semantic_key") or ""),
+        field=field,
+        raw_value=str(raw).strip(),
+        rule_version=rule_version,
+        run_id=run_id,
+    )
 
 
 def arxiv_consistent_date(value: Any, paper_url: Any) -> Any:
@@ -126,6 +143,7 @@ def _candidate_to_flat(
     lineage_mode: str,
     run_id: str,
     canonical_names: dict[str, str] | None = None,
+    rule_versions: tuple[str, ...] = (RULE_VERSION,),
 ) -> dict[str, Any] | None:
     if candidate.get("status") != "accepted":
         return None
@@ -210,13 +228,19 @@ def _candidate_to_flat(
         except (TypeError, ValueError):
             return None
     flat["recordType"] = record_type
-    # Brief: startupName / company are canonical names. Use this run's deterministic
+    # Brief: startupName / company are canonical names. Use this mention's own deterministic
     # resolution match when there is one; keep the source-evidenced string alongside.
     name_key = {TAB_PRODUCTS: "content.startupName", TAB_JOBS: "content.company"}.get(tab)
     if name_key and flat.get(name_key):
         raw_name = str(flat[name_key])
         flat[name_key + "Raw"] = raw_name
-        flat[name_key] = (canonical_names or {}).get(raw_name, raw_name)
+        canonical = None
+        for version in rule_versions:
+            obs_key = _mention_observation_key(candidate, content_in, run_id=run_id, rule_version=version)
+            canonical = (canonical_names or {}).get(obs_key or "")
+            if canonical:
+                break
+        flat[name_key] = canonical or raw_name
     if tab == TAB_JOBS and flat.get("content.role_family"):
         flat["content.role_family"] = display_role_family(flat["content.role_family"])
     flat["durableIdentity"] = _durable_id(candidate)
@@ -290,6 +314,22 @@ def build_export_snapshot(
     Consistent read snapshot: accepted candidates + mapping log, stable sort.
     Fixture mode never claims live admission.
     """
+    if conn.info.transaction_status == TransactionStatus.IDLE:
+        # One REPEATABLE READ snapshot for every read while workers keep writing.
+        with conn.transaction():
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            return _build_export_snapshot(conn, run_id=run_id, as_of=as_of, settings=settings)
+    # Caller already holds an open transaction: read inside it.
+    return _build_export_snapshot(conn, run_id=run_id, as_of=as_of, settings=settings)
+
+
+def _build_export_snapshot(
+    conn: psycopg.Connection,
+    *,
+    run_id: UUID | str,
+    as_of: str | datetime,
+    settings: Settings | None,
+) -> dict[str, Any]:
     cfg = settings or get_settings()
     rid = UUID(str(run_id))
     cutoff = _parse_as_of(as_of)
@@ -322,7 +362,7 @@ def build_export_snapshot(
 
     # Prefer run-scoped; if empty, still allow records table fallback for B0 fixtures.
     flats: list[dict[str, Any]] = []
-    canonical_names = _canonical_name_map(conn, rid)
+    canonical_names, rule_versions = _canonical_name_map(conn, rid)
     for cand in candidates:
         flat = _candidate_to_flat(
             cand,
@@ -330,6 +370,7 @@ def build_export_snapshot(
             lineage_mode=lineage,
             run_id=str(rid),
             canonical_names=canonical_names,
+            rule_versions=rule_versions or (RULE_VERSION,),
         )
         if flat is not None:
             flats.append(flat)

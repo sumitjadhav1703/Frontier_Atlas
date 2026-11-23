@@ -24,17 +24,22 @@ def mapping_observation_key(
     raw_value: str | None = None,
     raw_name: str | None = None,
     rule_version: str = RULE_VERSION,
+    run_id: str | UUID | None = None,
 ) -> str:
-    """Idempotent key = source item + field + raw value + rule version."""
+    """Idempotent key = source item + field + raw value + rule version (+ run id).
+
+    With run_id, each run records its own event; without it the key is unchanged.
+    """
     raw = raw_value if raw_value is not None else (raw_name or "")
-    material = "\0".join(
-        [
-            str(source_item_id or ""),
-            str(field or ""),
-            str(raw),
-            str(rule_version or RULE_VERSION),
-        ]
-    )
+    parts = [
+        str(source_item_id or ""),
+        str(field or ""),
+        str(raw),
+        str(rule_version or RULE_VERSION),
+    ]
+    if run_id:
+        parts.append(str(run_id))
+    material = "\0".join(parts)
     digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
     return f"map:{digest}"
 
@@ -47,6 +52,7 @@ def mapping_event_key(**kwargs: Any) -> str:
         raw_value=kwargs.get("raw_value"),
         raw_name=kwargs.get("raw_name"),
         rule_version=str(kwargs.get("rule_version") or RULE_VERSION),
+        run_id=kwargs.get("run_id"),
     )
 
 
@@ -240,6 +246,7 @@ def record_mapping_event(
         field=field,
         raw_name=raw_name or decision.raw_name,
         rule_version=rule_version or decision.rule_version or RULE_VERSION,
+        run_id=run_id,
     )
     decision = decision.model_copy(
         update={

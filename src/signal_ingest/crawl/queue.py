@@ -356,6 +356,22 @@ def requeue_failed(conn: psycopg.Connection, *, run_id: UUID) -> int:
     return len(rows)
 
 
+def lock_fenced_task(conn: psycopg.Connection, task: ClaimedTask) -> bool:
+    """Row-lock the task (until txn end) only if this worker still holds its lease."""
+    row = conn.execute(
+        """
+        SELECT id FROM tasks
+        WHERE id = %s
+          AND lease_owner = %s
+          AND fencing_token = %s
+          AND status = 'leased'
+        FOR UPDATE
+        """,
+        (str(task.id), task.lease_owner, task.fencing_token),
+    ).fetchone()
+    return row is not None
+
+
 def complete_task(
     conn: psycopg.Connection,
     task: ClaimedTask,
@@ -386,18 +402,7 @@ def complete_task(
     with conn.transaction():
         # Hold the row under fence for the whole commit; do not release until
         # observation (+ successors) are written so crash mid-txn rolls back.
-        row = conn.execute(
-            """
-            SELECT id FROM tasks
-            WHERE id = %s
-              AND lease_owner = %s
-              AND fencing_token = %s
-              AND status = 'leased'
-            FOR UPDATE
-            """,
-            (str(task.id), task.lease_owner, task.fencing_token),
-        ).fetchone()
-        if row is None:
+        if not lock_fenced_task(conn, task):
             return False
 
         # One committed effect per task: unique(task_id) + reuse on replay.

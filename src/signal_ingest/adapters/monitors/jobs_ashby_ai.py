@@ -57,14 +57,15 @@ def remote_flag(posting: dict[str, Any]) -> tuple[bool | None, str]:
     """contracts.md: remote = explicitly fully remote; explicit on-site/hybrid = False.
 
     Ashby sets isRemote=True on Hybrid roles, so workplaceType decides when present.
+    Without it, isRemote=False is trusted but isRemote=True stays unspecified (may be hybrid).
     """
     wt = str(posting.get("workplaceType") or "").strip().lower()
     if wt == "remote":
         return True, "workplaceType"
     if wt in {"onsite", "on-site", "hybrid"}:
         return False, "workplaceType"
-    if isinstance(posting.get("isRemote"), bool):
-        return posting["isRemote"], "isRemote"
+    if posting.get("isRemote") is False:
+        return False, "isRemote"
     return None, "none"
 
 

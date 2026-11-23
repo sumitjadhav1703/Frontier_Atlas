@@ -65,9 +65,9 @@ def init_db_cmd(ctx: typer.Context) -> None:
     settings = ctx.obj["settings"]
     applied = init_db(settings)
     if applied:
-        typer.echo(f"Applied migrations ({settings.mode.value}): {', '.join(applied)}")
+        typer.echo(f"Applied migrations ({settings.mode.value}): {', '.join(applied)}", err=True)
     else:
-        typer.echo(f"Migrations already applied ({settings.mode.value}).")
+        typer.echo(f"Migrations already applied ({settings.mode.value}).", err=True)
 
 
 @app.command("crawl")
@@ -239,7 +239,7 @@ def bench_cmd(
     report = run_benchmark()
     if write:
         path = write_benchmark_artifact(report)
-        typer.echo(f"wrote {path}")
+        typer.echo(f"wrote {path}", err=True)
     typer.echo(json.dumps(report, indent=2, default=str))
 
 

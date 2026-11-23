@@ -1152,3 +1152,131 @@ async def test_r3_auth_header_stripped_on_cross_origin_redirect(crawl):
         await pool.aclose()
     assert obs.outcome.value == "ok", obs.reason
     assert seen["auth"] is None
+
+
+# ---------------------------------------------------------------------------
+# Horizontal scaling: parse fence, live blob, pacing knobs
+# ---------------------------------------------------------------------------
+
+
+def _scale_parse_rows(conn, run_id) -> int:
+    row = conn.execute(
+        "SELECT (SELECT count(*) FROM candidates WHERE run_id = %s)"
+        " + (SELECT count(*) FROM quarantines WHERE run_id = %s)",
+        (str(run_id), str(run_id)),
+    ).fetchone()
+    return int(row[0])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["monitor", "bulk"])
+async def test_scale_parse_stale_lease_writes_nothing(crawl_env, kind):
+    """A parse whose lease was reclaimed (fencing token bumped) writes no candidate/quarantine."""
+    import dataclasses
+    import uuid
+
+    from signal_ingest.crawl.queue import claim_tasks, enqueue_task
+    from signal_ingest.storage import connect, create_run
+    from tests.integration.b2_api import http_pool, load_bulk_json
+
+    if kind == "monitor":
+        from signal_ingest.adapters.monitors import pipeline as pipe
+
+        source = "news_mit"
+        payload = {"body": "<html><body><p>scale fence</p></body></html>",
+                   "content_type": "text/html"}
+
+        def parse(conn, task):
+            return pipe.process_parse_stage(conn, task, settings=crawl_env)
+
+        async def fetch(conn, task, pool):
+            return await pipe.process_monitor_task(conn, task, pool=pool, settings=crawl_env)
+    else:
+        from signal_ingest.adapters.bulk import pipeline as pipe
+
+        source = pipe.SOURCE_PRODUCTS
+        orphan = next(r for r in load_bulk_json("products.json")["products"]
+                      if r["product_id"] == "prod-orphan")
+        payload = {"row": orphan}
+
+        def parse(conn, task):
+            return pipe.process_parse_stage(conn, task, settings=crawl_env)
+
+        async def fetch(conn, task, pool):
+            return await pipe.process_bulk_task(conn, task, pool=pool, settings=crawl_env)
+
+    pool = http_pool()
+    try:
+        with connect(crawl_env) as conn:
+            run_id = create_run(conn, settings=crawl_env)
+            enqueue_task(conn, source_id=source, url=f"http://127.0.0.1:9/scale/{uuid.uuid4().hex}",
+                         stage="fetch", external_id=f"scale-{uuid.uuid4().hex}", run_id=run_id,
+                         payload=payload)
+            conn.commit()
+            (ftask,) = claim_tasks(conn, worker_id="scale-f", run_id=run_id, stage="fetch", limit=1)
+            assert (await fetch(conn, ftask, pool))["ok"] is True
+            conn.commit()
+            (ptask,) = claim_tasks(conn, worker_id="scale-p", run_id=run_id, stage="parse", limit=1)
+            # Simulate a reclaim by another worker: the token moves on.
+            conn.execute("UPDATE tasks SET fencing_token = fencing_token + 1 WHERE id = %s",
+                         (str(ptask.id),))
+            conn.commit()
+            out = parse(conn, ptask)
+            conn.commit()
+            assert out == {"ok": False, "stage": "parse", "stale_lease": True}
+            assert _scale_parse_rows(conn, run_id) == 0
+            # Control: the current token holder does write (test is not vacuous).
+            fresh = dataclasses.replace(ptask, fencing_token=ptask.fencing_token + 1)
+            assert parse(conn, fresh)["ok"] is True
+            conn.commit()
+            assert _scale_parse_rows(conn, run_id) == 1
+    finally:
+        await pool.aclose()
+
+
+@pytest.mark.parametrize("kind", ["monitor", "bulk"])
+def test_scale_live_missing_blob_raises(tmp_fixture_env, kind):
+    """Live: a recorded but missing raw blob raises (work loop retries), not body=None."""
+    import uuid
+    from datetime import datetime, timezone
+
+    from signal_ingest.config import Mode, load_settings
+    from signal_ingest.crawl.store import RawStore
+    from signal_ingest.crawl.types import ClaimedTask
+
+    sha = "ab" * 32
+    obs_row = {"content_key": f"ab/ab/{sha}", "content_sha256": sha, "outcome": "ok",
+               "request_url": "http://127.0.0.1:9/x", "final_url": "http://127.0.0.1:9/x"}
+    task = ClaimedTask(
+        id=uuid.uuid4(), run_id=None, source_id="news_mit", stage="parse", semantic_key="k",
+        external_id="x", url="http://127.0.0.1:9/x", attempt_count=1, max_attempts=3,
+        fencing_token=1, lease_owner="w", lease_expires=datetime.now(timezone.utc),
+        payload={"row": {"id": "x"}, "body": "fixture body"},
+    )
+    live = load_settings(mode=Mode.LIVE)
+    fixture = load_settings(mode=Mode.FIXTURE)
+    if kind == "monitor":
+        from signal_ingest.adapters.monitors.pipeline import _raw_from_observation_row
+
+        store = RawStore(tmp_fixture_env["raw_live"])
+        with pytest.raises(FileNotFoundError):
+            _raw_from_observation_row(None, obs_row, task=task, store=store, live=True)
+        raw = _raw_from_observation_row(None, obs_row, task=task, store=store, live=False)
+    else:
+        from signal_ingest.adapters.bulk.pipeline import _raw_from_observation_row
+
+        with pytest.raises(FileNotFoundError):
+            _raw_from_observation_row(None, obs_row, task=task, settings=live)
+        raw = _raw_from_observation_row(None, obs_row, task=task, settings=fixture)
+    assert raw.body is not None  # fixture keeps payload reconstruction
+
+
+def test_scale_origin_pacing_env_overrides(monkeypatch):
+    from signal_ingest.crawl.pool import PoolLimits
+
+    assert (PoolLimits().per_origin_concurrency, PoolLimits().per_origin_min_interval_s) == (2, 0.05)
+    monkeypatch.setenv("SIGNAL_INGEST_ORIGIN_CONCURRENCY", "1")
+    monkeypatch.setenv("SIGNAL_INGEST_ORIGIN_MIN_INTERVAL_S", "0.5")
+    limits = PoolLimits()
+    assert (limits.per_origin_concurrency, limits.per_origin_min_interval_s) == (1, 0.5)
+    assert PoolLimits(per_origin_concurrency=3).per_origin_concurrency == 3
