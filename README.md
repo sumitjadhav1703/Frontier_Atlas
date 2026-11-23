@@ -9,10 +9,11 @@ A resumable ingestion pipeline for AI startups, products, research papers, jobs 
 | Startups | 1,906 | yc-oss `tags/ai.json` (YC company directory mirror) |
 | Products | 1,195 | AgiPicks open dataset (CC BY 4.0): pricing from its attributed field, owner from the vendor's own homepage. OpenRouter public model directory: owner and pricing from the listing |
 | Research Papers | 1,656 | pwc-archive paper→code links (official repos only), OpenAlex metadata (CC0), GitHub REST stars |
-| Jobs / News | see release manifest | 5 AI job boards + 5 AI news sources, 24-hour window at the export cutoff |
+| Jobs | 4 | 24 h fresh at cutoff 2026-11-23T08:00:18Z. Exact `publishedAt` and source-backed remote flag from the Ashby feed (25 AI-company boards); 5 AI job boards monitored |
+| News | 14 | 24 h fresh at the same cutoff: Guardian 11, TechCrunch 3, MIT News 1, ScienceDaily 1 (Ars Technica detail blocked by WAF) |
 | Entity Mapping Log | 3,101 | raw name → canonical ID, method, decision, embedding suggestions |
 
-Offline gates B0–B8 pass: 368 cumulative cases under `TZ=UTC` and `TZ=Asia/Kolkata`. Entity resolution on the gate set scores precision 1.0 / recall 1.0 (FP 0).
+Offline gates B0–B8 pass: 379 cumulative cases under `TZ=UTC` and `TZ=Asia/Kolkata`. Entity resolution on the gate set scores precision 1.0 / recall 1.0 (FP 0).
 
 ## Architecture
 

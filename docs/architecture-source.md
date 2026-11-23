@@ -1,6 +1,6 @@
 # AI Signal ingestion: architecture (3 pages)
 
-Source for `architecture.pdf` (render: `signal-ingest render-pdf`). Each `## Page N` heading starts a new PDF page. Every `{{TODO_MEASURED: ...}}` marks a number that must come from a captured artifact; none are estimated here.
+Source for `architecture.pdf` (render: `signal-ingest render-pdf`). Each `## Page N` heading starts a new PDF page. Every number below comes from a captured artifact of live run `a4fee584` or the gate suite; none are estimated.
 
 ## Page 1 · Pipeline topology and 500k projection
 
@@ -53,6 +53,7 @@ The allowable input is further capped by the provider's input-per-request limit 
 | --- | --- | --- | --- | --- |
 | Gemini 2.5 Flash (free) | 1,048,576 | 1,000,000 | 2,048 | ledger cap 200 req / 1M tok |
 | Groq gpt-oss-120b (free) | 131,072 | 5,500 (8,000 TPM measured) | 1,024 | 1,000 req (header); ledger 900 |
+| Meta muse-ember-1.0 (billed credits) | 1,048,576 | 200,000 | 2,048 | $0.10/$0.50 per 1M; spend cap $5 |
 | Ollama (local) | 8,192 | 6,912 | 1,024 | disabled: not installed |
 
 ### Fallback states: 413 and 429
@@ -68,7 +69,7 @@ The allowable input is further capped by the provider's input-per-request limit 
 
 ### LiteLLM Router and LangGraph chain
 
-LangGraph extraction graph: `budget → segment → cache_lookup → plan → call_llm (⇄ rebudget) → merge → finalize`. `call_llm` goes through a LiteLLM Router chain Gemini → Groq → optional Ollama, with paid spend cap 0.
+LangGraph extraction graph: `budget → segment → cache_lookup → plan → call_llm (⇄ rebudget) → merge → finalize`. `call_llm` goes through a LiteLLM Router chain Gemini → Groq → Meta Model API (muse-ember-1.0, `reasoning_effort` minimal) → optional Ollama. Free tiers come first. The billed Meta tier must carry a per-token cost estimate, and the ledger enforces a $5 cap.
 
 **Quota hook.** A Router `CustomLogger` reserves requests and tokens in the shared quota store before every dispatch (`async_pre_call_check`). It refuses unreserved dispatch, raises a context error when the measured request exceeds the tier limit, and turns a quota denial into a Router rate-limit so the tier cools down and the chain falls over. It also checks that the Router did not rewrite the grounded messages.
 
@@ -85,7 +86,7 @@ LangGraph extraction graph: `budget → segment → cache_lookup → plan → ca
 
 ### Freshness
 
-Export cutoff T. A news or job row is admitted only if its whole publication interval lies within [T − 24h, T]. Original structured dates are preferred; conflicts go to quarantine. Release cutoff: {{TODO_MEASURED: UTC and IST}}. Star snapshot age: {{TODO_MEASURED: hours at cutoff}}.
+Export cutoff T. A news or job row is admitted only if its whole publication interval lies within [T − 24h, T]. Original structured dates are preferred; conflicts go to quarantine. Release cutoff: 2026-11-23T08:00:18Z (13:30:18 IST). Star snapshot age at cutoff: about 11.7 h (stars observed 2026-11-22 ≈20:20Z).
 
 ### Storage trade-offs
 
@@ -97,10 +98,10 @@ Export cutoff T. A news or job row is admitted only if its whole publication int
 
 | Item | Value |
 | --- | --- |
-| Rows per tab at release | {{TODO_MEASURED: six tab counts}} |
-| Bulk classes ≥ 1,000 rows | {{TODO_MEASURED}} |
-| Entity resolution precision / recall | 1.00 / 1.00 on the 27-case gate set (TP 15, FP 0, FN 0, 10 abstentions); live register 50 seeds |
-| Grounded LLM rows | {{TODO_MEASURED: count and traced example}} |
-| Source scans complete / partial | {{TODO_MEASURED}} |
+| Rows per tab at release | Startups 1,906 · Products 1,195 · Research Papers 1,656 · Jobs 4 · News 14 · Entity Mapping Log 3,101 |
+| Bulk classes ≥ 1,000 rows | Yes, recomputed from the export CSVs by `b8-status` (unique durableIdentity, lineageMode=live) |
+| Entity resolution precision / recall | 1.00 / 1.00 on the 27-case gate set (TP 15, FP 0, FN 0, 10 abstentions). Live: 103 seeds (50 YC + 53 OpenRouter-attributed labs), 3,101 mentions → 388 match, 859 abstain, 1,854 new |
+| Grounded LLM rows | 2 product owners extracted by Gemini, each quote-grounded; e.g. `agent-crm` → "Agent CRM" (`author: Agent CRM`). All tiers (Gemini, Groq, Meta) verified live |
+| Source scans complete / partial | Bulk: 4/4 complete. Monitors: 10 configured; news fresh from Guardian 11, TechCrunch 3, MIT 1, ScienceDaily 1. Jobs: 4 fresh via the Ashby feed (25 AI-company boards) |
 
-**Known gaps.** {{TODO_MEASURED: sources blocked or partial, unresolved fresh items with reasons}}.
+**Known gaps.** Ars Technica article pages sit behind an AWS WAF captcha (not bypassed). aijobs.net robots disallows `/job/`. One AI-community board renders client-side. aiworkportal postings have no publish time. inferencejobs and 495 Ashby postings lack a source-backed remote flag (quarantined, not guessed). Paper dates are kept only inside the arXiv v1 month, else `YYYY-MM`. Three relaunch duplicates remain among products (1,192 unique).
