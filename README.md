@@ -8,7 +8,7 @@
 | --- | --- |
 | **Live data (Google Sheet, 6 tabs)** | [Frontier Atlas export](https://docs.google.com/spreadsheets/d/1cNBMMtAjfSz7o9VXdL2qzBd5I7lfzYyLAZNdFOzHi9w/edit?usp=sharing) |
 | Architecture (3 pages) | [architecture.pdf](architecture.pdf) · source [docs/architecture-source.md](docs/architecture-source.md) |
-| Demo walkthrough | [DEMO.md](DEMO.md) |
+| Demo walkthrough | [Watch on YouTube](https://youtu.be/05GLsYB2mQI) |
 | Data contracts | [docs/contracts.md](docs/contracts.md) · sources [docs/sources.md](docs/sources.md) |
 | Build log and reviews | [notes/progress.md](notes/progress.md) · [notes/reviews/](notes/reviews) |
 
