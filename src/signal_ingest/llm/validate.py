@@ -106,6 +106,12 @@ def validate_claim(
     for sid in claim.segment_ids:
         seg = segments_by_id.get(sid)
         if seg is None:
+            # Some models drop the ":kind" suffix ("seg:0005" for "seg:0005:pricing").
+            # Map only when exactly one retained segment has that prefix; the quote check
+            # below still has to pass, so grounding is not loosened.
+            prefixed = [s for k, s in segments_by_id.items() if k.startswith(f"{sid}:")]
+            seg = prefixed[0] if len(prefixed) == 1 else None
+        if seg is None:
             return FieldEvidence(
                 field=claim.field,
                 value=None,

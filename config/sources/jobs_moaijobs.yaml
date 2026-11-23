@@ -12,6 +12,8 @@ pagination_stop_rule: listing_then_detail_verify_original_date
 attribution: MoAIJobs listing; New badge is discovery-only
 domain_governor: moaijobs.com
 fallback: alternate independent AI/ML job directory after documented reason
+feed_url: "https://www.moaijobs.com/ai-jobs.rss"
+detail_url_pattern: /job/[^/?#]+/?$
 reviewer: desk-research
 probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/jobs_moaijobs/discovery_20261121T190729Z.json
 probe_fetch_status: ok

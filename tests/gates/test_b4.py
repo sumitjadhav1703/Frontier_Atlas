@@ -1039,3 +1039,33 @@ async def test_r2_ledger_outage_does_not_strand_reservations(monkeypatch):
     assert script.dispatched("gemini") == 0
     assert ledger.ops("commit") == ["groq"]
     assert ledger.snapshot()["open_reservations"] == 0
+
+
+def test_segment_id_without_kind_suffix_maps_only_when_unique():
+    """Groq/Meta cite "seg:0005" for "seg:0005:pricing": accept only an unambiguous prefix,
+    and the quote must still be inside that segment."""
+    from signal_ingest.llm.schema import ModelExtractionPayload
+    from signal_ingest.llm.validate import validate_payload
+    from signal_ingest.llm.types import FieldDecision, Segment, SegmentKind
+
+    segs = [
+        Segment(segment_id="seg:0005:pricing", kind=SegmentKind.PRICING, text="Acme Notes Pro costs $12 per month.",
+                start_offset=0, end_offset=35, entity_hints=("Acme Notes",)),
+        Segment(segment_id="seg:0006:body", kind=SegmentKind.BODY, text="Acme Notes is built by Acme Labs Inc.",
+                start_offset=36, end_offset=73, entity_hints=("Acme Notes",)),
+    ]
+
+    def run(sid, quote):
+        payload = ModelExtractionPayload.model_validate(
+            {"fields": [{"field": "owner", "value": "Acme Labs Inc.", "quote": quote, "segment_ids": [sid]}]}
+        )
+        out = validate_payload(payload, segments=segs, target_entity="Acme Notes", target_aliases=(),
+                               known_entities=(), deterministic_fields={}, fields_requested=("owner",))
+        return {e.field: e for e in out}["owner"]
+
+    ok = run("seg:0006", "Acme Notes is built by Acme Labs Inc.")
+    assert ok.decision is FieldDecision.ACCEPTED
+    wrong_seg = run("seg:0005", "Acme Notes is built by Acme Labs Inc.")
+    assert wrong_seg.decision is FieldDecision.REJECTED and wrong_seg.reason == "quote_not_in_segment"
+    missing = run("seg:0009", "Acme Notes is built by Acme Labs Inc.")
+    assert missing.reason == "unknown_segment:seg:0009"

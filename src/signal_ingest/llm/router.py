@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import logging
+import math
 import re
 from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
@@ -70,6 +71,12 @@ class Tier:
     api_base: str | None = None
     timeout_s: float = 30.0
     extra: dict[str, Any] = field(default_factory=dict)
+    # USD per 1M tokens for billed tiers; tokens x price = micro-USD reserved per dispatch.
+    usd_per_m_input: float = 0.0
+    usd_per_m_output: float = 0.0
+
+    def estimated_micros(self, input_tokens: int, output_tokens: int) -> int:
+        return int(math.ceil(input_tokens * self.usd_per_m_input + output_tokens * self.usd_per_m_output))
 
 
 @dataclass
@@ -231,6 +238,8 @@ class _QuotaHook(CustomLogger):
                 requests=1,
                 input_tokens=state.measured.input_tokens,
                 output_tokens=state.max_output,
+                # Upper bound (full max_output); billed tiers are capped by paid_spend_cap.
+                estimated_paid_micros=tier.estimated_micros(state.measured.input_tokens, state.max_output),
             )
         except QuotaExhaustedError as exc:
             state.dispatches.append(
@@ -543,7 +552,7 @@ def build_chain(
     path: Path | None = None,
     connect: Any = None,
     env: Mapping[str, str] | None = None,
-    order: tuple[str, ...] = ("gemini", "groq", "ollama"),
+    order: tuple[str, ...] = ("gemini", "groq", "meta", "ollama"),
     router: Any = None,
 ) -> LiteLLMChain:
     """Live extraction chain from providers.yaml, for extract(candidate, chain).
@@ -584,6 +593,8 @@ def build_chain(
                     # Optional litellm params from providers.yaml, e.g. reasoning_effort.
                     **(block.get("litellm_params") or {}),
                 },
+                usd_per_m_input=float(block.get("usd_per_m_input") or 0.0),
+                usd_per_m_output=float(block.get("usd_per_m_output") or 0.0),
             )
         )
     return LiteLLMChain(tiers, ledger, router=router, env=env)

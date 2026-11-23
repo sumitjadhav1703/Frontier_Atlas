@@ -19,10 +19,10 @@ Source: `artifacts/gates/b7_benchmark.json`, mode `fixture_loopback`: a local HT
 
 | Run | Workers | Tasks/s | p95 fetch ms | Bytes/item |
 | --- | --- | --- | --- | --- |
-| 1k | 1 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
-| 1k | 4 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
-| 10k | 1 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
-| 10k | 4 | {{TODO_MEASURED: tps}} | {{TODO_MEASURED: p95}} | {{TODO_MEASURED: bytes}} |
+| 1k | 1 | 112.9 | 4.6 | 148.8 |
+| 1k | 4 | 147.7 | 48.3 | 148.8 |
+| 10k | 1 | 89.1 | 5.2 | 150.8 |
+| 10k | 4 | 147.2 | 42.3 | 150.8 |
 
 ### 500k projection
 
@@ -32,10 +32,10 @@ T(500k) >= max( W_stage / theta_eff,
                N_tokens / R_provider_tokens ) + T_cold_start
 \]
 
-- **Local pipeline bound:** 500k ÷ {{TODO_MEASURED: 4-worker tasks/s}} = {{TODO_MEASURED: hours}}.
-- **Upstream bound:** per-source published limits × live yield {{TODO_MEASURED: accepted/fetched per class}}; retries add {{TODO_MEASURED: retry rate}}.
-- **Provider bound:** {{TODO_MEASURED: LLM-eligible share}} × tokens/item ÷ free-tier daily token quota.
-- **Raw storage:** {{TODO_MEASURED: compressed bytes/item}} × 500k + indexes + retention = {{TODO_MEASURED: GB}}.
+- **Local pipeline bound:** 500k tasks ÷ 147 tasks/s (4 workers, loopback, per-origin pace bound) ≈ 0.95 h per stage; about 3 stages per item (fetch, parse, enrich) ≈ 2.8 h. Live run a4fee584: 11,948 tasks for 4,757 accepted bulk rows.
+- **Upstream bound:** live yield (accepted/discovered): startups 1906/1906, AgiPicks products 850/1166 (owner and pricing evidence both required), OpenRouter 345/366, papers 1656/1700. Retries: 2 of 11,948 tasks (0.02%). GitHub REST at 5,000 req/h per token caps stars at 500k ÷ 5,000 = 100 h; GraphQL batches of 100 repos bring that to about 1 h.
+- **Provider bound:** 17% of AgiPicks homepages (175/1043) needed the LLM owner fallback, at about 8k input tokens each. At 500k products that is about 85k calls ≈ 0.7B tokens, far above a 1M-token/day free tier. Bulk rows therefore come from structured fields, and the LLM is reserved for fields that need it (paid or local tiers at scale).
+- **Raw storage:** measured mean bytes/item: JSON listing rows 0.6–6 KB, vendor homepages 427 KB (raw store 497 MB for this run). 500k homepages ≈ 213 GB raw; storing extracted text and hashes instead of full HTML cuts this by more than 10×.
 - Scope: 500k candidates per class or in total, as stated with the measured coefficients. More workers help until the source or provider limit dominates.
 
 ## Page 2 · Budgets, 413/429 and the provider chain
@@ -51,9 +51,9 @@ The allowable input is further capped by the provider's input-per-request limit 
 
 | Provider tier | Context | Max input | Reserved output | Daily quota |
 | --- | --- | --- | --- | --- |
-| Gemini (free) | {{TODO_MEASURED: from console}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} |
-| Groq (free) | {{TODO_MEASURED: from console}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} |
-| Ollama (local) | {{TODO_MEASURED: model card}} | {{TODO_MEASURED}} | {{TODO_MEASURED}} | local |
+| Gemini 2.5 Flash (free) | 1,048,576 | 1,000,000 | 2,048 | ledger cap 200 req / 1M tok |
+| Groq gpt-oss-120b (free) | 131,072 | 5,500 (8,000 TPM measured) | 1,024 | 1,000 req (header); ledger 900 |
+| Ollama (local) | 8,192 | 6,912 | 1,024 | disabled: not installed |
 
 ### Fallback states: 413 and 429
 
@@ -61,10 +61,10 @@ The allowable input is further capped by the provider's input-per-request limit 
 | --- | --- |
 | 413 / context-length 400 | Re-budget and split smaller; strict max depth and minimum chunk; never resend unchanged bytes |
 | 429 with Retry-After | Persist `next_attempt` at the server time or fall over to the next tier; never shorten a cooldown |
-| 429 / 5xx without guidance | Full jitter in [0, min(cap, base × 2^attempt)], bounded attempts and wall clock across tiers |
+| 429 / 5xx without guidance | LiteLLM backoff 0.5·2^n s (cap 8 s) + up to 0.75 s jitter, bounded retries per tier, then fall over |
 | 401/403 credential | Disable tier for the run (not a quota event) |
 | Quota exhausted | Deny dispatch before the call; abstain or queue |
-| Circuit open | Shared durable cooldown; one half-open probe |
+| Repeated failures | Router cooldown per tier (allowed_fails, cooldown_time); Retry-After > 15 s cools the tier without sleeping |
 
 ### LiteLLM Router and LangGraph chain
 
@@ -72,7 +72,7 @@ LangGraph extraction graph: `budget → segment → cache_lookup → plan → ca
 
 **Quota hook.** A Router `CustomLogger` reserves requests and tokens in the shared quota store before every dispatch (`async_pre_call_check`). It refuses unreserved dispatch, raises a context error when the measured request exceeds the tier limit, and turns a quota denial into a Router rate-limit so the tier cools down and the chain falls over. It also checks that the Router did not rewrite the grounded messages.
 
-**Example trace (redacted).** {{TODO_MEASURED: live trace id, tier sequence, tokens, latency from captured transcript}}
+**Example trace (redacted).** Live run a4fee584, 2026-11-22T20:32Z, product `agent-crm`: tier sequence gemini (ok), 8,033 input / 41 output tokens. Owner "Agent CRM" was accepted only because its quote (`author: Agent CRM`) sits in segment `seg:0002:meta` of the fetched page. In the owner-fallback batch (40 attempts), Gemini's free per-minute limit triggered 429 cooldowns; the chain fell over to Groq, where 3 requests above the 5,500-token tier limit raised a context error and were not dispatched. Ledger: Gemini 7 and Groq 3 real dispatches, $0.
 
 ## Page 3 · Identity, freshness, storage and results
 
@@ -81,7 +81,7 @@ LangGraph extraction graph: `budget → segment → cache_lookup → plan → ca
 - Semantic task keys with unique constraints make duplicate discovery a no-op. One observation per task (`UNIQUE(task_id)`).
 - Lease fencing tokens: a stale worker cannot commit after its lease is reclaimed. A crash after the blob write and before commit reuses the content hash.
 - Self-healing: heartbeat renewal, reaper (retry or dead-letter at max attempts), pooled connections replaced when dropped, backoff on DB errors, SIGTERM drains in-flight work.
-- Measured recovery: {{TODO_MEASURED: kill -9 restart time and committed-effect count}}.
+- Measured recovery (`artifacts/gates/r1_kill9_demo.txt`): after `kill -9` mid-run, 4 leased + 8 ready tasks were reclaimed; the healer finished 12/12 in 11.2 s with 0 duplicate observations.
 
 ### Freshness
 
@@ -99,7 +99,7 @@ Export cutoff T. A news or job row is admitted only if its whole publication int
 | --- | --- |
 | Rows per tab at release | {{TODO_MEASURED: six tab counts}} |
 | Bulk classes ≥ 1,000 rows | {{TODO_MEASURED}} |
-| Entity resolution precision / recall | {{TODO_MEASURED: from b6_metrics.json and live register}} |
+| Entity resolution precision / recall | 1.00 / 1.00 on the 27-case gate set (TP 15, FP 0, FN 0, 10 abstentions); live register 50 seeds |
 | Grounded LLM rows | {{TODO_MEASURED: count and traced example}} |
 | Source scans complete / partial | {{TODO_MEASURED}} |
 

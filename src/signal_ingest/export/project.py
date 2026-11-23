@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import json
 from datetime import datetime, timezone
 from typing import Any
@@ -78,6 +79,23 @@ def _payload_as_dict(payload: Any) -> dict[str, Any]:
     return dict(payload or {})
 
 
+_ARXIV_NEW_ID = re.compile(r"arxiv\.org/(?:abs|pdf)/(\d{2})(\d{2})\.\d{4,5}", re.IGNORECASE)
+
+
+def arxiv_consistent_date(value: Any, paper_url: Any) -> Any:
+    """Keep the metadata date only if it falls in the arXiv v1 month encoded in the ID.
+
+    OpenAlex merges preprints into journal works, so its date can be a later (or earlier)
+    version. A new-style arXiv ID (YYMM.NNNNN) fixes the v1 submission month; when the
+    date disagrees, export that month as a reduced-precision ISO-8601 date ("2023-02").
+    """
+    m = _ARXIV_NEW_ID.search(str(paper_url or ""))
+    if not m:
+        return value
+    month = f"20{m.group(1)}-{m.group(2)}"
+    return value if str(value or "").startswith(month) else month
+
+
 def _candidate_to_flat(
     candidate: dict[str, Any],
     *,
@@ -103,6 +121,10 @@ def _candidate_to_flat(
             flat.setdefault("content.repoId", str(repo_id))
         if meta.get("starsObservedAt"):
             flat.setdefault("content.starsObservedAt", meta["starsObservedAt"])
+        if "content.published_date" in flat:
+            flat["content.published_date"] = arxiv_consistent_date(
+                flat["content.published_date"], flat.get("content.paper_url") or flat.get("source.url")
+            )
     # Optional evidence-backed extras for Jobs/News body provenance.
     if tab in {TAB_JOBS, TAB_NEWS}:
         evidence_body = evidence.get("body")

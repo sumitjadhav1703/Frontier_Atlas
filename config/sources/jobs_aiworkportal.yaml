@@ -12,6 +12,7 @@ pagination_stop_rule: curated_link_to_employer_posting_dedupe_syndicated
 attribution: AI Work Portal curated link joined to employer posting
 domain_governor: aijobportal.com
 fallback: alternate independent AI/ML job directory after documented reason
+detail_url_pattern: /jobs?/[^/?#]+/?$
 reviewer: desk-research
 probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/jobs_aiworkportal/discovery_20261121T190723Z.json
 probe_fetch_status: ok

@@ -11,7 +11,7 @@ from signal_ingest.llm.provider import ProviderLimits
 from signal_ingest.llm.quota import ProviderQuotaConfig, QuotaLedger
 
 # Fake / replay never qualifies as a live provider for B5/B8 gates.
-_LIVE_NAMES = frozenset({"gemini", "groq", "ollama"})
+_LIVE_NAMES = frozenset({"gemini", "groq", "meta", "ollama"})
 _FAKE_PREFIXES = ("fake", "replay", "mock", "scripted")
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]

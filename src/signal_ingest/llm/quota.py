@@ -186,6 +186,10 @@ class QuotaLedger:
                     f"billing-enabled plan blocked for {provider} (paid_spend_cap=0)",
                     provider=provider,
                 )
+            if cfg.billing_enabled and paid_units <= 0:
+                raise PaidSpendBlockedError(
+                    f"billed route {provider} needs a cost estimate", provider=provider
+                )
             if paid_units > 0:
                 cap_micros = max(0, self.paid_spend_cap) * 1_000_000
                 if self.paid_spend_used + paid_units > cap_micros:

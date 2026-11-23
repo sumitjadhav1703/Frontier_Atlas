@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -52,6 +53,18 @@ async def process_claimed_task(
     Bulk sources (B2) dispatch discover→fetch→parse(+enrich_stars) via adapters.
     """
     cfg = settings or get_settings()
+    from signal_ingest.adapters.monitors.pipeline import MONITOR_SOURCES, process_monitor_task
+
+    if task.source_id in MONITOR_SOURCES:
+        # Monitor fetch -> parse. Live parse judges freshness at the list observation time
+        # (export re-filters at its own cutoff); fixture keeps cutoff=None semantics.
+        cutoff = None
+        observed = task.payload.get("list_observed_at")
+        if cfg.mode.value == "live" and observed:
+            cutoff = datetime.fromisoformat(str(observed))
+        return await process_monitor_task(
+            conn, task, pool=pool, raw_store=raw_store, settings=cfg, policy=policy, cutoff=cutoff
+        )
     if _dispatch_bulk(task):
         from signal_ingest.adapters.bulk import process_bulk_task
 

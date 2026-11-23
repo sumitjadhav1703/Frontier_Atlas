@@ -12,3 +12,5 @@ var/
 *.pyc
 *.egg-info/
 .impeccable/
+.cursor/
+.venv-py315.bak/

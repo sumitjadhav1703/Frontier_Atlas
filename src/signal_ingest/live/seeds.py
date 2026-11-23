@@ -258,3 +258,75 @@ def build_live_seeds_from_run(settings: Settings, *, run_id: str, limit: int = L
     for ident in identities:
         ident["metadata"] = {"origin": "live_bulk_acquisition", "synthetic": False, "run_id": str(run_id)}
     return write_live_seed_register(identities, settings=settings, revision=f"live-run-{run_id}")
+
+
+def build_known_lab_seeds_from_run(
+    settings: Settings, run_id: str, *, path: Path | None = None
+) -> Path:
+    """Merge one seed per OpenRouter-attributed owner into the live register.
+
+    Owner display name is the adapter's "Owner:" prefix (content.startupName); the
+    trusted key is the model id prefix before "/". No aliases are invented.
+    Names already present (by comparison key) or ids already present are skipped.
+    """
+    from signal_ingest.resolution.normalize import comparison_key
+    from signal_ingest.storage.db import connect
+
+    if settings.mode is not Mode.LIVE:
+        raise SeedRegisterError("build_known_lab_seeds_from_run requires mode=live")
+    target = path or DEFAULT_LIVE_SEEDS_PATH
+    existing = seed_document_to_dict(load_live_seed_register(target, settings=settings))
+    identities: list[dict[str, Any]] = list(existing["identities"])
+    with connect(settings) as conn:
+        rows = conn.execute(
+            """
+            SELECT split_part(payload->'meta'->>'product_id', '/', 1) AS owner_key,
+                   payload->'content'->>'startupName' AS owner_name,
+                   COUNT(*) AS n
+            FROM candidates
+            WHERE run_id = %s AND source_id = 'bulk.openrouter'
+              AND record_type = 'PRODUCT' AND status = 'accepted'
+              AND COALESCE(payload->'meta'->>'product_id', '') LIKE '%%/%%'
+              AND COALESCE(payload->'content'->>'startupName', '') <> ''
+            GROUP BY 1, 2
+            ORDER BY 1, 3 DESC, 2
+            """,
+            (run_id,),
+        ).fetchall()
+    # One display name per owner key: the most frequent, ties by name (rows are pre-sorted).
+    owners: dict[str, str] = {}
+    for owner_key, owner_name, _ in rows:
+        owners.setdefault(str(owner_key).strip().casefold(), str(owner_name).strip())
+    seen_keys = {comparison_key(i["canonical_name"]) for i in identities}
+    seen_ids = {i["id"] for i in identities}
+    for owner_key, owner_name in sorted(owners.items()):
+        entity_id = f"live.lab.openrouter.{owner_key}"
+        ckey = comparison_key(owner_name)
+        if not owner_key or not ckey or entity_id in seen_ids or ckey in seen_keys:
+            continue
+        assert_not_fixture_seed_id(entity_id, mode="live")
+        identities.append(
+            {
+                "id": entity_id,
+                "namespace": "startup",  # B6 has startup|product; labs are owner organizations.
+                "canonical_name": owner_name,
+                "aliases": [],
+                "domains": [],
+                "source_ids": {"openrouter": owner_key},
+                "evidence_url": f"https://openrouter.ai/{owner_key}",
+                "owner_id": None,
+                "metadata": {
+                    "origin": "live_openrouter_directory",
+                    "synthetic": False,
+                    "run_id": str(run_id),
+                },
+            }
+        )
+        seen_ids.add(entity_id)
+        seen_keys.add(ckey)
+    return write_live_seed_register(
+        identities,
+        settings=settings,
+        revision=f"{existing['revision'].split('+labs-')[0]}+labs-{run_id}",
+        path=target,
+    )

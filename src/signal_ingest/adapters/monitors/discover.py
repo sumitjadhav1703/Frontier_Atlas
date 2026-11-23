@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import calendar
 import json
+import re
 from datetime import datetime, timezone
 from typing import Any, Sequence
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import feedparser
 
@@ -209,6 +210,12 @@ def _discover_from_html(
     feed_ordered: bool,
 ) -> DiscoverScanResult:
     links = extract_list_links(text)
+    # Optional per-source detail URL regex (inventory `detail_url_pattern`): an HTML board
+    # page links to nav/auth/category pages too; only posting/article URLs become tasks.
+    pattern = (source_cfg.raw or {}).get("detail_url_pattern")
+    if pattern:
+        rx = re.compile(str(pattern))
+        links = [i for i in links if rx.search(urlparse(urljoin(base_url, i["url"])).path)]
     rows = [
         {
             "url": item["url"],

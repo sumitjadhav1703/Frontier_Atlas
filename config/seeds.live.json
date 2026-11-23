@@ -850,12 +850,913 @@
       "source_ids": {
         "yc": "12553"
       }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "AionLabs",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/aion-labs",
+      "id": "live.lab.openrouter.aion-labs",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "aion-labs"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Amazon",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/amazon",
+      "id": "live.lab.openrouter.amazon",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "amazon"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Anthropic",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/anthropic",
+      "id": "live.lab.openrouter.anthropic",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "anthropic"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Baidu",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/baidu",
+      "id": "live.lab.openrouter.baidu",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "baidu"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "ByteDance",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/bytedance",
+      "id": "live.lab.openrouter.bytedance",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "bytedance"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "ByteDance Seed",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/bytedance-seed",
+      "id": "live.lab.openrouter.bytedance-seed",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "bytedance-seed"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Venice",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/cognitivecomputations",
+      "id": "live.lab.openrouter.cognitivecomputations",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "cognitivecomputations"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Cohere",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/cohere",
+      "id": "live.lab.openrouter.cohere",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "cohere"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "DeepSeek",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/deepseek",
+      "id": "live.lab.openrouter.deepseek",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "deepseek"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Elorian",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/elorian",
+      "id": "live.lab.openrouter.elorian",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "elorian"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Fireworks",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/fireworks",
+      "id": "live.lab.openrouter.fireworks",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "fireworks"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Google",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/google",
+      "id": "live.lab.openrouter.google",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "google"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "IBM",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/ibm-granite",
+      "id": "live.lab.openrouter.ibm-granite",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "ibm-granite"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "inclusionAI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/inclusionai",
+      "id": "live.lab.openrouter.inclusionai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "inclusionai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Inference.net",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/inference-net",
+      "id": "live.lab.openrouter.inference-net",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "inference-net"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "KT",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/kt",
+      "id": "live.lab.openrouter.kt",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "kt"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "LiquidAI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/liquid",
+      "id": "live.lab.openrouter.liquid",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "liquid"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Mancer",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/mancer",
+      "id": "live.lab.openrouter.mancer",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "mancer"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Meta",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/meta",
+      "id": "live.lab.openrouter.meta",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "meta"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Microsoft",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/microsoft",
+      "id": "live.lab.openrouter.microsoft",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "microsoft"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "MiniMax",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/minimax",
+      "id": "live.lab.openrouter.minimax",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "minimax"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Mistral",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/mistralai",
+      "id": "live.lab.openrouter.mistralai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "mistralai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Moondream",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/moondream",
+      "id": "live.lab.openrouter.moondream",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "moondream"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "MoonshotAI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/moonshotai",
+      "id": "live.lab.openrouter.moonshotai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "moonshotai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Morph",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/morph",
+      "id": "live.lab.openrouter.morph",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "morph"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Motif Technologies",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/motif-technologies",
+      "id": "live.lab.openrouter.motif-technologies",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "motif-technologies"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Nex AGI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/nex-agi",
+      "id": "live.lab.openrouter.nex-agi",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "nex-agi"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Nous",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/nousresearch",
+      "id": "live.lab.openrouter.nousresearch",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "nousresearch"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "NVIDIA",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/nvidia",
+      "id": "live.lab.openrouter.nvidia",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "nvidia"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "OpenAI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/openai",
+      "id": "live.lab.openrouter.openai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "openai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Particle AI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/particle-ai",
+      "id": "live.lab.openrouter.particle-ai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "particle-ai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Perceptron",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/perceptron",
+      "id": "live.lab.openrouter.perceptron",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "perceptron"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Perplexity",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/perplexity",
+      "id": "live.lab.openrouter.perplexity",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "perplexity"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "PrismML",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/prism-ml",
+      "id": "live.lab.openrouter.prism-ml",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "prism-ml"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Qwen",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/qwen",
+      "id": "live.lab.openrouter.qwen",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "qwen"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "RadixArk",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/radixark",
+      "id": "live.lab.openrouter.radixark",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "radixark"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Recursive",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/recursive",
+      "id": "live.lab.openrouter.recursive",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "recursive"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Reflection",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/reflection",
+      "id": "live.lab.openrouter.reflection",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "reflection"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Relace",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/relace",
+      "id": "live.lab.openrouter.relace",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "relace"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Ricursive",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/ricursiveai",
+      "id": "live.lab.openrouter.ricursiveai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "ricursiveai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Sakana",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/sakana",
+      "id": "live.lab.openrouter.sakana",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "sakana"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Sao10K",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/sao10k",
+      "id": "live.lab.openrouter.sao10k",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "sao10k"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "ScaleDown",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/scaledown",
+      "id": "live.lab.openrouter.scaledown",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "scaledown"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "StepFun",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/stepfun",
+      "id": "live.lab.openrouter.stepfun",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "stepfun"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Tencent",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/tencent",
+      "id": "live.lab.openrouter.tencent",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "tencent"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "TheDrummer",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/thedrummer",
+      "id": "live.lab.openrouter.thedrummer",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "thedrummer"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Thinking Machines",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/thinkingmachines",
+      "id": "live.lab.openrouter.thinkingmachines",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "thinkingmachines"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Upstage",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/upstage",
+      "id": "live.lab.openrouter.upstage",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "upstage"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Writer",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/writer",
+      "id": "live.lab.openrouter.writer",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "writer"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "SpaceXSI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/x-ai",
+      "id": "live.lab.openrouter.x-ai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "x-ai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Xiaomi",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/xiaomi",
+      "id": "live.lab.openrouter.xiaomi",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "xiaomi"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Z.ai",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/z-ai",
+      "id": "live.lab.openrouter.z-ai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "z-ai"
+      }
+    },
+    {
+      "aliases": [],
+      "canonical_name": "xAI",
+      "domains": [],
+      "evidence_url": "https://openrouter.ai/~x-ai",
+      "id": "live.lab.openrouter.~x-ai",
+      "metadata": {
+        "origin": "live_openrouter_directory",
+        "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+        "synthetic": false
+      },
+      "namespace": "startup",
+      "owner_id": null,
+      "source_ids": {
+        "openrouter": "~x-ai"
+      }
     }
   ],
-  "identity_count": 50,
+  "identity_count": 103,
   "lineage_mode": "live",
   "pending_qualification": false,
-  "revision": "live-run-a4fee584-3ac1-4188-95f4-19d7742dbd33",
+  "revision": "live-run-a4fee584-3ac1-4188-95f4-19d7742dbd33+labs-a4fee584-3ac1-4188-95f4-19d7742dbd33",
   "rule_version": "resolution-v1",
   "target_count": 50
 }

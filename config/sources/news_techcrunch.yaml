@@ -12,6 +12,7 @@ pagination_stop_rule: category_index_then_article_until_window_exhausted
 attribution: TechCrunch AI category to original article
 domain_governor: techcrunch.com
 fallback: qualify alternate publisher AI desk before swap
+feed_url: "https://techcrunch.com/category/artificial-intelligence/feed/"
 reviewer: desk-research
 probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_techcrunch/discovery_20261121T190736Z.json
 probe_fetch_status: ok

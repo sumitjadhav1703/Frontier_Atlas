@@ -12,6 +12,7 @@ pagination_stop_rule: topic_index_then_detail_until_window_exhausted
 attribution: MIT News AI topic index to original article
 domain_governor: news.mit.edu
 fallback: qualify alternate publisher AI desk before swap
+feed_url: "https://news.mit.edu/topic/mitartificial-intelligence2-rss.xml"
 reviewer: desk-research
 probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_mit/discovery_20261121T190733Z.json
 probe_fetch_status: ok

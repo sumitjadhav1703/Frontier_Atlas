@@ -65,7 +65,8 @@ class HttpPool:
             write=self.limits.read_timeout_s,
             pool=self.limits.connect_timeout_s,
         )
-        headers = {"User-Agent": self.limits.user_agent}
+        # Only advertise codings _read_body can inflate under its byte caps (no br/zstd).
+        headers = {"User-Agent": self.limits.user_agent, "Accept-Encoding": "gzip, deflate"}
         if client is not None:
             self._client = client
             self._owns_client = False

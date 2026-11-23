@@ -177,6 +177,28 @@ def audit_cmd(
     raise typer.Exit(code=0 if result.get("ok") else 1)
 
 
+@app.command("resolve")
+def resolve_cmd(
+    ctx: typer.Context,
+    run_id: str = typer.Option(..., "--run"),
+    embed: bool = typer.Option(False, "--embed", help="Also embed entities + annotate suggestions (downloads model once)."),
+) -> None:
+    """Run B6 deterministic resolution over a run's startup names and product owners."""
+    from signal_ingest.resolution.run_resolution import resolve_run
+    from signal_ingest.storage.db import connect
+
+    settings = ctx.obj["settings"]
+    embedder = None
+    if embed:
+        from signal_ingest.resolution.embed import FastEmbedder
+
+        embedder = FastEmbedder()
+    with connect(settings) as conn:
+        result = resolve_run(conn, run_id, mode=settings.mode.value, embedder=embedder)
+        conn.commit()
+    typer.echo(json.dumps(result, indent=2, default=str))
+
+
 @app.command("export")
 def export_cmd(
     ctx: typer.Context,
@@ -318,6 +340,22 @@ def b8_status_cmd(ctx: typer.Context) -> None:
     body = write_b8_status(load_live_settings())
     typer.echo(json.dumps(body, indent=2, default=str))
     raise typer.Exit(code=1 if body.get("blocked") else 0)
+
+
+@app.command("crawl-monitors")
+def crawl_monitors_cmd(
+    ctx: typer.Context,
+    run_id: str = typer.Option(..., "--run", help="Existing live run UUID"),
+) -> None:
+    """Live discovery for every qualified news/jobs monitor into one run (then `work`)."""
+    import asyncio
+
+    from signal_ingest.live.monitors import crawl_all_monitors_live
+    from signal_ingest.live.settings import load_live_settings
+
+    result = asyncio.run(crawl_all_monitors_live(load_live_settings(), run_id=run_id))
+    typer.echo(json.dumps(result, indent=2, default=str))
+    raise typer.Exit(code=0 if result["ok_count"] else 1)
 
 
 @app.command("pilot")

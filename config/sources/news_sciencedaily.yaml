@@ -12,6 +12,7 @@ pagination_stop_rule: listing_then_story_detail_until_window_exhausted
 attribution: ScienceDaily AI news listing to story page
 domain_governor: sciencedaily.com
 fallback: qualify alternate publisher AI desk before swap
+feed_url: "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml"
 reviewer: desk-research
 probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_sciencedaily/discovery_20261121T190735Z.json
 probe_fetch_status: ok

@@ -1426,3 +1426,18 @@ def test_r5_bench_refuses_live_mode(tmp_fixture_env):
     live = load_settings(mode=Mode.LIVE)
     with pytest.raises(RuntimeError, match="fixture mode"):
         run_benchmark(sizes=(1,), worker_counts=(1,), settings=live, origins=1)
+
+
+@pytest.mark.parametrize(
+    ("value", "url", "expected"),
+    [
+        ("2019-03-21T00:00:00Z", "https://arxiv.org/abs/1212.5668", "2012-12"),  # journal date of merged work
+        ("2022-07-01", "https://arxiv.org/abs/2302.04580", "2023-02"),  # earlier-version date
+        ("2023-02-09T00:00:00Z", "https://arxiv.org/abs/2302.04580", "2023-02-09T00:00:00Z"),  # consistent: kept
+        ("2020-01-01", "https://arxiv.org/abs/cs/0301001", "2020-01-01"),  # old-style id: unchanged
+    ],
+)
+def test_b8_paper_date_consistent_with_arxiv_v1_month(value, url, expected):
+    from signal_ingest.export.project import arxiv_consistent_date
+
+    assert arxiv_consistent_date(value, url) == expected

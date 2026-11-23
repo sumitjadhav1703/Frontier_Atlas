@@ -217,3 +217,189 @@ def _rate_headers(obs: RawObservation) -> dict[str, str]:
         if key.lower() in keys:
             out[key] = value
     return out
+
+
+# ---------------------------------------------------------------------------
+# B9 prerequisite: live monitor discovery into a run (detail fetch/parse via `work`)
+# ---------------------------------------------------------------------------
+
+
+async def _fetch_discovery(
+    settings: Settings, source_id: str, cfg: Any, pool: HttpPool
+) -> tuple[RawObservation, str, list[dict[str, Any]]]:
+    """Publisher feed (inventory feed_url) first, then the documented page, then fallbacks. No challenge bypass:
+    a challenge/denied outcome just moves on to the next documented URL."""
+    tried: list[dict[str, Any]] = []
+    obs: RawObservation | None = None
+    feed = (cfg.raw or {}).get("feed_url")
+    urls = ((feed,) if feed else ()) + (cfg.documented_access_url, *(_DISCOVERY_FALLBACKS.get(source_id) or ()))
+    for url in urls:
+        obs = await probe_url(url, settings=settings, pool=pool)
+        tried.append({"url": url, "outcome": obs.outcome.value, "status": obs.status_code, "reason": obs.reason})
+        if obs.outcome is FetchOutcomeKind.OK and obs.body:
+            return obs, url, tried
+    assert obs is not None
+    return obs, str(cfg.documented_access_url), tried
+
+
+def _exact_fresh(items: list[Any], cutoff: datetime) -> int:
+    from signal_ingest.freshness.interval import PublicationInterval
+    from signal_ingest.freshness.window import in_freshness_window
+
+    n = 0
+    for item in items:
+        pub = (item.metadata or {}).get("publication")
+        if not pub or pub.get("precision") != "instant":
+            continue
+        interval = PublicationInterval(
+            lower=datetime.fromisoformat(pub["lower"]),
+            upper=datetime.fromisoformat(pub["upper"]),
+            precision=pub["precision"],
+            method=pub.get("method") or "list",
+        )
+        n += in_freshness_window(interval, cutoff)
+    return n
+
+
+async def crawl_monitor_live(
+    settings: Settings,
+    source_id: str,
+    *,
+    run_id: str,
+    pool: HttpPool | None = None,
+) -> dict[str, Any]:
+    """Live discovery for one qualified monitor, enqueued into `run_id` (fetch stage).
+
+    Watermark: the prior discover checkpoint cursor feeds discover_list (R3 heuristic).
+    Detail fetch + parse run through `signal-ingest work`; parse eligibility uses the
+    list observation time as cutoff, and export re-filters at its own as-of.
+    """
+    from uuid import UUID
+
+    from signal_ingest.adapters.monitors.config import load_monitor_config
+    from signal_ingest.adapters.monitors.pipeline import discover_and_enqueue, finalize_monitor_run
+    from signal_ingest.crawl.queue import get_checkpoint
+    from signal_ingest.live.paths import assert_live_mode
+    from signal_ingest.storage.db import connect
+
+    assert_live_mode(settings)
+    cfg = load_monitor_config(source_id)
+    own = pool is None
+    pool = pool or HttpPool(PoolLimits(user_agent="signal-ingest/0.1 (+assessment)"))
+    try:
+        obs, used_url, tried = await _fetch_discovery(settings, source_id, cfg, pool)
+    finally:
+        if own:
+            await pool.aclose()
+    now = get_clock().now()
+    now = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+    probe = write_probe_artifact(
+        settings, source_id=source_id, kind="crawl_discovery", body=obs.body,
+        meta={**observation_summary(obs), "tried": tried, "run_id": run_id},
+    )
+    with connect(settings) as conn:
+        if obs.outcome is not FetchOutcomeKind.OK or not obs.body:
+            finalize_monitor_run(
+                conn, source_id=source_id, cutoff_at=now, run_id=UUID(run_id), failed=True,
+                rate_limited=obs.status_code == 429,
+                discover_meta={"tried": tried, "error": obs.reason or obs.outcome.value},
+            )
+            conn.commit()
+            return {"source_id": source_id, "ok": False, "tried": tried, "probe_artifact": str(probe)}
+        prior = get_checkpoint(conn, source_id=source_id, stage="discover", partition_key="monitor")
+        result = discover_and_enqueue(
+            conn,
+            source_id=source_id,
+            payload=obs.body,
+            run_id=UUID(run_id),
+            checkpoint=(prior or {}).get("cursor_opaque"),
+            cutoff=now,
+            observed_at=now,
+            base_url=obs.final_url or used_url,
+        )
+        finalize_monitor_run(
+            conn, source_id=source_id, cutoff_at=now, run_id=UUID(run_id),
+            discover_meta={k: v for k, v in result.items() if k in {"discovered", "scan", "created", "skipped"}},
+            rate_limited=obs.status_code == 429,
+        )
+        conn.commit()
+    return {
+        "source_id": source_id,
+        "ok": True,
+        "discovery_url": used_url,
+        "discovered": result.get("discovered"),
+        "enqueued": result.get("created"),
+        "skipped_seen": result.get("skipped"),
+        "scan": result.get("scan"),
+        "probe_artifact": str(probe),
+    }
+
+
+async def crawl_all_monitors_live(settings: Settings, *, run_id: str) -> dict[str, Any]:
+    """Crawl every inventory monitor whose status is qualified into one run."""
+    from signal_ingest.adapters.monitors.config import load_monitor_configs
+    from signal_ingest.config.sources_inventory import load_source_inventory
+
+    status = {str(e.get("source_id")): str(e.get("status")) for e in load_source_inventory()}
+    pool = HttpPool(PoolLimits(user_agent="signal-ingest/0.1 (+assessment)"))
+    out: list[dict[str, Any]] = []
+    try:
+        for cfg in load_monitor_configs():
+            if status.get(cfg.source_id) != "qualified":
+                out.append({"source_id": cfg.source_id, "ok": False, "skipped": "not_qualified"})
+                continue
+            try:
+                out.append(await crawl_monitor_live(settings, cfg.source_id, run_id=run_id, pool=pool))
+            except Exception as exc:  # one source failing must not stop the others
+                out.append({"source_id": cfg.source_id, "ok": False, "error": f"{type(exc).__name__}: {exc}"[:300]})
+    finally:
+        await pool.aclose()
+    summary = {
+        "track": "monitor_crawl",
+        "run_id": run_id,
+        "sources": out,
+        "ok_count": sum(1 for r in out if r.get("ok")),
+        "enqueued_total": sum(int(r.get("enqueued") or 0) for r in out),
+    }
+    path = write_qualification_manifest(settings, name="monitor_crawl", payload=summary)
+    summary["manifest_path"] = str(path)
+    return summary
+
+
+async def dry_probe_monitors(settings: Settings) -> list[dict[str, Any]]:
+    """Discovery + one detail per monitor; no DB writes, no enqueue."""
+    from signal_ingest.adapters.monitors.config import load_monitor_configs
+
+    now = get_clock().now()
+    now = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+    pool = HttpPool(PoolLimits(user_agent="signal-ingest/0.1 (+assessment)"))
+    rows: list[dict[str, Any]] = []
+    try:
+        for cfg in load_monitor_configs():
+            obs, used_url, tried = await _fetch_discovery(settings, cfg.source_id, cfg, pool)
+            row: dict[str, Any] = {"source_id": cfg.source_id, "discovery": obs.outcome.value, "url": used_url}
+            if obs.outcome is FetchOutcomeKind.OK and obs.body:
+                scan = discover_list(cfg, obs.body, cutoff=now, observed_at=now, base_url=obs.final_url or used_url)
+                row["discovered"] = len(scan.items)
+                row["exact_fresh_24h"] = _exact_fresh(scan.items, now)
+                if scan.items:
+                    item = scan.items[0]
+                    det = await probe_url(item.url, settings=settings, pool=pool)
+                    parsed = (
+                        parse_detail(
+                            det, cfg, cutoff=now, list_fields=dict(item.metadata or {}).get("list_fields"),
+                            board_url=used_url, title_hint=(item.metadata or {}).get("title"),
+                            external_id_hint=item.external_id,
+                            list_observed_at=now.isoformat(),
+                        )
+                        if det.outcome is FetchOutcomeKind.OK and det.body
+                        else None
+                    )
+                    row["detail"] = det.outcome.value
+                    row["detail_parse_ok"] = bool(parsed and parsed.ok)
+                    row["detail_eligible"] = bool(parsed and parsed.eligible)
+                    row["detail_reason"] = getattr(parsed, "quarantine_reason", None)
+            rows.append(row)
+    finally:
+        await pool.aclose()
+    return rows

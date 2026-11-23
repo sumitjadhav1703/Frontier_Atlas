@@ -2,7 +2,9 @@
 # Model IDs are placeholders until B8 live qualification. Fake never counts as live.
 
 defaults:
-  paid_spend_cap: 0
+  # User decision 2026-11-23: up to $5 of the user's Meta Model API credits may be spent
+  # (only the meta tier is billed; every other tier stays free/local).
+  paid_spend_cap: 5
   network_mode: offline
   # Model IDs stay placeholders until B8. Absent credentials disable a tier.
 
@@ -61,6 +63,31 @@ providers:
     billing_enabled: false
     requests_per_day: 900
     tokens_per_day: 200000
+
+  meta:
+    # Meta Model API (dev.meta.ai), OpenAI-compatible. Cheapest standard model; content is
+    # not used for training (the "-contributor" variants would allow that, so not used).
+    provider: meta
+    litellm_model: openai/muse-ember-1.0
+    model: muse-ember-1.0
+    enabled: true
+    base_url: https://api.meta.ai/v1
+    api_key_env: MODEL_API_KEY
+    context_tokens: 1048576
+    reserved_output_tokens: 2048
+    max_input_tokens: 200000
+    max_request_bytes: 2000000
+    safety_margin_tokens: 256
+    framing_tokens: 512
+    billing_enabled: true
+    # Ember always reasons (default effort "max"; "none" is rejected), and reasoning eats
+    # output tokens: the first live smoke used all 1024 and returned no answer.
+    litellm_params:
+      reasoning_effort: minimal
+    usd_per_m_input: 0.10
+    usd_per_m_output: 0.50
+    requests_per_day: 3000
+    tokens_per_day: 20000000
 
   ollama:
     provider: ollama

@@ -723,3 +723,43 @@ def test_b5_fixture_dir_labeled_or_absent():
         root = meta.get("_meta") or meta
         assert root.get("label") == "synthetic"
         assert root.get("not_for_live_export") is True
+
+
+async def test_meta_billed_tier_needs_estimate_and_respects_cap():
+    """User-approved Meta credits: a billed route without a cost estimate is refused,
+    and estimated spend can never pass paid_spend_cap (whole USD)."""
+    from signal_ingest.config import FrozenClock
+    from signal_ingest.llm.errors import PaidSpendBlockedError
+    from signal_ingest.llm.quota import ProviderQuotaConfig, QuotaLedger
+    from signal_ingest.llm.router import Tier
+
+    ledger = QuotaLedger(paid_spend_cap=5, clock=FrozenClock(FROZEN))
+    ledger.configure(ProviderQuotaConfig(provider="meta", billing_enabled=True))
+    with pytest.raises(PaidSpendBlockedError):
+        await ledger.reserve("meta", requests=1, input_tokens=100, output_tokens=10)
+    tier = Tier(name="meta", litellm_model="openai/muse-ember-1.0", limits=b5_api.tier("groq").limits,
+                usd_per_m_input=0.10, usd_per_m_output=0.50)
+    micros = tier.estimated_micros(8000, 1024)
+    assert micros == 8000 * 0.10 + 1024 * 0.50  # 1312 micro-USD
+    r = await ledger.reserve("meta", requests=1, input_tokens=8000, output_tokens=1024,
+                             estimated_paid_micros=micros)
+    await ledger.commit(r)
+    with pytest.raises(PaidSpendBlockedError):
+        await ledger.reserve("meta", requests=1, input_tokens=1, output_tokens=1,
+                             estimated_paid_micros=5_000_000)
+
+
+def test_meta_tier_is_third_in_live_chain_config():
+    from signal_ingest.llm.providers_config import is_live_provider, load_providers_config
+
+    providers = load_providers_config()["providers"]
+    meta = providers["meta"]
+    assert meta["billing_enabled"] is True and float(meta["usd_per_m_input"]) > 0
+    assert meta["litellm_model"] == "openai/muse-ember-1.0" and "contributor" not in meta["model"]
+    assert is_live_provider("meta")
+    import inspect
+
+    from signal_ingest.llm.router import build_chain
+
+    order = inspect.signature(build_chain).parameters["order"].default
+    assert order.index("gemini") < order.index("groq") < order.index("meta")

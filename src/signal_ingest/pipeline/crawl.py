@@ -104,6 +104,18 @@ def crawl_source(
     """
     cfg = settings or get_settings()
     listing_meta: dict[str, Any] = {}
+    if cfg.mode is Mode.LIVE and is_monitor_source(source_id):
+        if run_id is None:
+            raise ValueError("live monitor crawl needs --run (enqueue into the acquisition run)")
+        from signal_ingest.live.monitors import crawl_monitor_live
+
+        return {
+            "run_id": str(run_id),
+            "source_id": source_id,
+            "mode": cfg.mode.value,
+            "discover": asyncio.run(crawl_monitor_live(cfg, source_id, run_id=str(run_id))),
+            "raw_root": str(cfg.assert_mode_raw_root()),
+        }
     if cfg.mode is Mode.LIVE:
         from signal_ingest.live.bulk import LISTINGS, fetch_bulk_listing
 

@@ -12,6 +12,7 @@ pagination_stop_rule: js_listing_then_employer_description_verify_original_time
 attribution: AI Community Jobs listing to employer description
 domain_governor: aicommunityjobs.com
 fallback: Himalayas AI/ML section with strict relevance filter if needed
+detail_url_pattern: /jobs?/[^/?#]+/?$
 reviewer: desk-research
 probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/jobs_aicommunity/discovery_20261121T190719Z.json
 probe_fetch_status: ok
