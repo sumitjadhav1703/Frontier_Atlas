@@ -1,0 +1,11 @@
+# two_worker_demo 2026-11-23T08:48:29Z
+run=b38cdd05-068d-423d-afb9-568f679621c5 tasks=300 endpoint=/slow delay=0.15s lease=5s
+kill -9 A at t=3.0s; tasks then: [('done', 52), ('leased', 8), ('ready', 240)]
+B exited rc=0 at t=24.4s
+per-worker processed:
+  A (killed): 26 completions logged before SIGKILL
+  B: processed=274 committed=274
+  healer: not needed (B drained the run)
+observations count, distinct task_id: (300, 300)
+task status counts: [('done', 300)]
+RESULT: PASS

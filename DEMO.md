@@ -1,14 +1,9 @@
-# Demo video plan: Frontier_Atlas (signal-ingest)
+# Frontier Atlas: 15-minute animated technical demo
 
-A 6–8 minute walkthrough for the hiring team. Every scene maps to one of the brief's evaluation criteria, and every number below comes from a real artifact in this repo or the live run. Nothing is staged.
-
-| Criterion (weight) | Where it is shown |
-| --- | --- |
-| LLM Orchestration (25%) | Scenes 5 and 6 |
-| Data Quality (25%) | Scenes 2, 3 and 4 |
-| Scale Thinking (20%) | Scene 8 |
-| Engineering Rigor (20%) | Scenes 8 and 10 |
-| Entity Resolution (10%) | Scene 7 |
+**Format:** animated technical product demo, about 15:00, 1920×1080 at 30 fps. Motion-graphics explainer scenes are cut together with short real screen recordings, which serve as proof.
+**Audience:** the hiring team. They may never open the code, so the video has to show how the system works and that it really works.
+**Build tool:** [Remotion](https://www.remotion.dev/) (React → MP4), built by Codex from [`video/CODEX_PROMPT.md`](video/CODEX_PROMPT.md).
+**Single source of truth for every number on screen:** [`video/facts.json`](video/facts.json) (taken from the live export). Two-worker proof output: [`video/two_worker_demo.txt`](video/two_worker_demo.txt).
 
 Links:
 - Repo: https://github.com/sumitjadhav1703/Frontier_Atlas
@@ -17,200 +12,166 @@ Links:
 
 ---
 
-## 0. Pre-recording checklist (5 minutes)
+## 1. What makes this video work (research-backed rules)
 
-1. Start Postgres with `brew services start postgresql@16`, then check it with `pg_isready -h 127.0.0.1 -p 5432`.
-2. Open a terminal in the repo with a large font (18–20 pt) and a dark theme. Run `source .venv/bin/activate`.
-3. **Never open, cat or scroll `.env` on screen.** Close any editor tab that shows it. Keys are only read inside the program.
-4. Open these tabs beforehand:
-   - The Google Sheet, with all 6 tabs visible.
-   - `architecture.pdf`.
-   - The GitHub repo page.
-   - One source URL per tab, for tracing: a ycombinator.com company page, an AgiPicks tool page, an arXiv abs page, an Ashby job URL, and a Guardian or TechCrunch article.
-5. Run every command block once before recording, so the outputs are warm and you know what appears.
-6. Export these once (read-only queries on the live run):
-   ```bash
-   export RUN=a4fee584-3ac1-4188-95f4-19d7742dbd33
-   export LIVE=postgresql://signal:signal@127.0.0.1:5432/signal_live
-   ```
+1. **Story arc, not a feature tour: problem → solution → proof → outcome.** Demos organised around internal menus lose viewers, so this one follows one record from the open web to a verified Sheet row ([Mind the Product](https://www.mindtheproduct.com/how-to-use-storytelling-to-create-powerful-product-demos/), [Demio](https://www.demio.com/blog/compelling-product-demo-script)).
+2. **Hook first, give away the ending.** The first 30 seconds show the finished result (4,757 verified records, every one traceable), then rewind to explain how ([ProductPlan](https://www.productplan.com/product-demo)).
+3. **One clear thread.** A single guide character, the crawler bot "Atlas", carries one URL through every chapter, so viewers never lose the thread.
+4. **Show, then prove.** Every animated concept is followed by 5–15 s of real footage (terminal or Sheet) showing the same thing happening for real. Proof beats claims ([Shopify](https://www.shopify.com/blog/product-demos)).
+5. **Motion graphics over full character animation.** Typography, icons, shapes and simple transitions explain systems better than rigged characters; keep the mascot small and simple ([Vimeo](https://vimeo.com/blog/post/whats-motion-graphics-in-video)).
+6. **Script and visuals separately.** The narration script below is final text, and visuals are timed to it ([DEV](https://dev.to/jakeg73/how-to-write-a-product-demo-script-2d0c)).
+7. **Chapters with titles and a progress bar.** Fifteen minutes is long, so a chapter card every 1–2 minutes and a persistent progress bar keep viewers oriented.
+8. **Captions always on.** Many reviewers watch muted. Key numbers appear as large on-screen text exactly when narrated.
 
----
+## 2. Visual language
 
-## Scene list
+- **Palette:** deep navy background `#0B1020`. Cyan `#22D3EE` = data flow; violet `#A78BFA` = LLM; green `#34D399` = verified/accepted; amber `#FBBF24` = waiting/retry; red `#F87171` = rejected/blocked; grey `#64748B` = abstain/quarantine.
+- **Type:** Inter (UI and body), JetBrains Mono (code, URLs, numbers).
+- **Mascot "Atlas":** a small round crawler robot with one big eye and antenna, in a flat anime/chibi style, drawn as SVG in code. It carries a glowing "URL ticket" through the story. It reacts: it blinks at a challenge page, sweats at a 429, cheers at "verified".
+- **Recurring metaphors:**
+  - **Task queue:** a ticket conveyor; each ticket shows `semantic_key`.
+  - **Lease:** a ticket held by a worker robot, with a shrinking amber timer ring.
+  - **Fencing token:** a numbered badge on the ticket; a stale badge can't stamp "done".
+  - **robots.txt:** a door sign (Allowed / Disallowed paths).
+  - **Challenge page:** a locked door with a shield. Atlas leaves a "blocked" note and takes the side door (RSS/API).
+  - **Per-site pacing:** a traffic light per website.
+  - **Raw store:** a vault of drawers labelled with sha256 prefixes.
+  - **Segments:** the page cut into cards `seg:0001:title`, `seg:0005:pricing`, …
+  - **LLM tiers:** three gates in a row (Gemini, Groq, Meta), each with a token-budget meter and a status light.
+  - **Grounding:** a highlighter that must find the model's quote inside a segment card. Green check, or a red stamp "REJECTED: not in page".
+  - **Entity resolution:** name bubbles that magnetically snap into one canonical node; abstained names stay grey; pgvector suggestions are dotted lines labelled "suggest only".
+  - **Freshness:** a horizontal timeline ruler with a glowing 24 h window ending at the cutoff.
 
-### 1. Intro and architecture (0:00–0:45)
-- **Screen:** page 1 of `architecture.pdf` (topology).
-- **Say:** "This is a resumable ingestion pipeline:
-  - Sources feed a PostgreSQL task queue with leases and fencing tokens.
-  - An async fetch pool stores raw snapshots by content hash.
-  - Parsers and a grounded LLM extractor build the records.
-  - Deterministic entity resolution canonicalizes names.
-  - Six tabs are exported at a UTC cutoff.
+## 3. Storyboard and narration (≈ 15:00)
 
-  The same code runs on a laptop or on N worker machines. Only the infrastructure changes."
+Timings are targets. Each scene lists visuals, what to show, and **narration**, which is the final voiceover text.
 
-### 2. The data: six tabs in the Sheet (0:45–1:45)
-- **Screen:** the Google Sheet. Click through each tab, with the header row frozen.
-- **Numbers** (cutoff 2026-11-23T08:53:50Z, 14:23 IST; refresh from `README.md` after the final export):
+### Ch 0 · Cold open (0:00–0:40)
+- **Visual:** a storm of URLs, HTML fragments and dates rains down. Atlas appears and catches one ticket. A clean six-tab spreadsheet assembles, and counters roll up: Startups 1,906 · Products 1,195 · Papers 1,656 · Jobs 7 · News 15 · Mapping Log 3,109. Stamp: "Every row traces to a source URL".
+- **Narration:** "The internet doesn't hand you clean data. Startups, products, research papers, jobs and news are scattered across thousands of sites, in different formats, with missing dates, and some of it is behind bot walls. In this demo I'll show how Frontier Atlas turns that into verified, structured records, where every single row traces back to the page it came from, and the AI is never allowed to make anything up."
 
-  | Tab | Rows |
-  | --- | --- |
-  | Startups | 1,906 |
-  | Products | 1,195 |
-  | Research Papers | 1,656, stars filled for all |
-  | Jobs | 7 |
-  | News | 15 |
-  | Entity Mapping Log | 3,109 |
+### Ch 1 · The problem (0:40–1:50)
+- **Visual:** four pain cards flip in, one at a time:
+  1. Scale: "lakhs of records".
+  2. Freshness: "published in the last 24 h. Guaranteed?"
+  3. LLM limits: "429 Too Many Requests / 413 Payload Too Large".
+  4. Messy names: "OpenAI, OpenAI Inc., Open AI".
 
-- **Show:** the `recordType`, `source.url`, `durableIdentity` and `lineageMode=live` columns.
-- **Trace one row per tab live.** Copy `source.url` from the Sheet, open it in the browser and show that the value matches:
-  - **Startup:** name and employee count on the YC page.
-  - **Product:** the owner on the vendor's own homepage (JSON-LD or footer), and the pricing on the AgiPicks page.
-  - **Paper:** title and authors on arXiv, and the star count on GitHub.
-- **Say:** "Every record traces back to a fetched source URL. A row without evidence is quarantined, never padded. That's why Jobs is small: a posting without an exact publish time, or without a stated remote status, is left out rather than guessed."
+  Then a fifth card in red: "Hallucinated data = disqualification".
+- **Narration:** "The task had five hard parts. Collect thousands of records with an architecture that scales to five hundred thousand. Monitor news and job boards and guarantee everything is from the last twenty-four hours. Use LLMs that rate-limit you and choke on long pages. Turn messy company names into one canonical identity. And the hardest rule of all: if the AI invents a single value, you're out. So I designed the whole system around one principle: no evidence, no row."
 
-### 3. Bulk acquisition at scale (1:45–2:30)
-- **Screen:** terminal.
-  ```bash
-  signal-ingest --mode live b8-status | head -30   # recomputes counts from the exported CSVs
-  psql "$LIVE" -c "select record_type, source_id, status, count(*) from candidates where run_id='$RUN' group by 1,2,3 order by 1,2;"
-  psql "$LIVE" -c "select source_id, reason, count(*) from quarantines where run_id='$RUN' group by 1,2 order by 3 desc limit 12;"
-  ```
-- **Say:**
-  - "Bulk classes come from documented structured sources: the yc-oss AI tag, the AgiPicks open dataset (CC BY 4.0), the OpenRouter model directory, and pwc-archive paper→code links joined with OpenAlex metadata and live GitHub stars."
-  - "Product owners come from the vendor's own homepage, domain-first. A widget's or hosting platform's name can't become the owner; reviewers caught that twice and it's covered by regression tests."
-  - "Quarantines are visible, with a reason for each one."
+### Ch 2 · The big picture (1:50–3:00)
+- **Visual:** the architecture diagram draws itself left to right:
 
-### 4. Freshness: the 24-hour guarantee (2:30–3:15)
-- **Screen:** the Sheet's News and Jobs tabs (`content.date`, `content.dateExtractionMethod`). Then page 3 of the PDF ("Freshness").
-- **Say:**
-  - "A news or job row is exported only if its whole publication interval lies inside [cutoff − 24h, cutoff]."
-  - "'2 hours ago' becomes an interval anchored to the listing fetch time."
-  - "A date with no timezone is widened by up to ±14 hours."
-  - "Conflicting date fields send the row to quarantine."
-  - "A page with no date is marked 'new since last run' by its watermark, but it's never exported as fresh."
-  - "News comes with full article text: the `content.text` column, 2–20k characters."
-- **Optional:**
-  ```bash
-  SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates/test_b3.py -k "relative or zoneless or interval" 2>&1 | tail -2
-  ```
+  Sources → discover → PostgreSQL task queue → N workers → fetch pool → raw store → parse → candidates → LangGraph + LiteLLM → entity resolution → six-tab export.
 
-### 5. LLM engine: fallback chain, 413 and 429 (3:15–4:30)
-- **Screen:** page 2 of the PDF (provider table and fallback states), then the terminal.
-  ```bash
-  .venv/bin/python scripts/demo_llm_extract.py                          # Gemini answers
-  .venv/bin/python scripts/demo_llm_extract.py --skip gemini            # falls over to Groq
-  .venv/bin/python scripts/demo_llm_extract.py --skip gemini --skip groq   # Meta muse-ember tier
-  ```
-- **Say:**
-  - "Extraction is a LangGraph state graph: budget → segment → cache → plan chunks → call the LLM, looping back to re-chunk on a 413 → validate → merge → finalize."
-  - "Calls go through a LiteLLM Router chain: Gemini 2.5 Flash, then Groq gpt-oss-120b, then Meta's muse-ember."
-  - "On a 429 it backs off exponentially with jitter. A Retry-After of 15 seconds or less is honored; a longer one cools the tier and falls over."
-  - "Chunks are sized to the tightest tier, so a payload never exceeds Groq's 8,000 tokens-per-minute free limit, which would otherwise be a real 413."
-  - "A quota hook reserves free-tier budget before every real dispatch. A billed tier must carry a cost estimate under a hard $5 cap."
-  - "Look at the output: the owner is accepted with its exact quote. The pricing claim is rejected because its quote doesn't support the label. That's how hallucinations are stopped."
-- **Then:**
-  ```bash
-  SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates/test_b5.py -k "rate_limit or retry_after or too_large or payload" 2>&1 | tail -2
-  ```
+  Atlas rides the ticket along the arrows. Each box lights up as it is named.
+- **Narration:** "Here's the map. Sources go into a discovery step that turns listings into tasks in a PostgreSQL queue. Any number of workers claim tasks, fetch pages politely, and store the raw bytes by content hash. Parsers build candidate records, and when a field isn't in the structured data, a grounded LLM engine extracts it. Then deterministic entity resolution canonicalizes names, and an export writes six tabs at a fixed UTC cutoff. Let's follow one ticket through each stage."
 
-### 6. Grounded LLM on live data (4:30–5:00)
-- **Screen:**
-  ```bash
-  psql "$LIVE" -c "select payload->'content'->>'company' company, left(payload->'content'->>'title',45) title, evidence->'is_remote'->>'value' is_remote, left(evidence->'is_remote'->>'quote',90) quote, evidence->'is_remote'->>'provider' provider from candidates where run_id='$RUN' and evidence->'is_remote'->>'basis'='llm';"
-  ```
-- **Say:**
-  - "These OpenAI postings had no remote flag in the source. The LLM read the posting and answered not-remote, quoting 'hybrid work model of 3 days in the office'. The validator checked that quote against the page."
-  - "Two other answers were rejected as ungrounded."
-  - "Product owner fallback works the same way: `agent-crm` → 'Agent CRM', quoting its meta author tag."
+### Ch 3 · The crawler (3:00–5:40)
+- **3a, structured sources first (3:00–3:40).** Visual: five source icons with labels: yc-oss JSON, AgiPicks open data (CC BY 4.0), OpenRouter model directory, pwc-archive + OpenAlex, RSS + Ashby job API. Narration: "First decision: prefer published feeds and APIs over scraping HTML. Every data class in this run comes from one: the YC directory mirror, an open AI-tools dataset, OpenRouter's model directory, a papers-with-code archive joined with OpenAlex, RSS feeds, and Ashby's public job API. They're licensed, stable, and they never throw captchas."
+- **3b, the queue (3:40–4:30).** Visual:
+  - Tickets drop onto the conveyor; duplicates bounce off with "ON CONFLICT DO NOTHING".
+  - Two worker robots grab tickets. A timer ring appears (the lease) and a badge with a number (the fencing token).
+  - A heartbeat pulse refreshes the ring.
 
-### 7. Entity resolution (5:00–5:45)
-- **Screen:** the Entity Mapping Log tab, filtered to `decision = match`, then the terminal.
-  ```bash
-  psql "$LIVE" -c "select raw_name, canonical_name, method, decision from resolution_events where run_id='$RUN' and method='approved_alias' limit 10;"
-  SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates/test_b6.py -k "openai or alias" 2>&1 | tail -2
-  ```
-- **Say:**
-  - "Normalization folds legal suffixes, accents and spacing, so 'OpenAI', 'OpenAI, Inc.' and 'Open AI' all resolve to OpenAI."
-  - "The seed list has 103 entries: 50 YC startups plus 53 AI labs taken from OpenRouter's directory."
-  - "Matches use trusted source IDs or approved aliases. A weak single-word name needs corroboration, so the test set scores precision 1.0 with zero false merges."
-  - "pgvector embeddings only suggest candidates, in the `suggested_candidates` column. They never merge anything."
-  - "Products and Jobs export the canonical name, with the raw string kept next to it."
+  Narration: "Each item becomes a task with a stable key, so discovering the same thing twice is a no-op. Workers claim tasks with `SELECT FOR UPDATE SKIP LOCKED`, so two workers never take the same ticket. Each claim comes with a lease that a heartbeat keeps renewing, and a fencing token. If a worker is too slow and its lease is handed to someone else, its old token can no longer write anything."
+- **3c, polite fetching (4:30–5:00).** Visual: the robots.txt door sign checked; the traffic light per site; Retry-After shown as a clock. A locked door with a shield (Ars Technica, AWS WAF captcha). Atlas writes "blocked" and takes the RSS side door. Narration: "Fetching is deliberately polite: robots.txt is obeyed, there are two requests per site with spacing, and Retry-After is honored. When a site shows a challenge page, like Ars Technica's firewall, we detect it, record it as blocked, and use its RSS feed instead. We never solve or evade captchas."
+- **3d, self-healing (5:00–5:40).** Visual: worker A is struck by a lightning bolt labelled `kill -9`. Its ticket timer runs out and turns amber. Worker B reaps it and finishes. Counter: 300/300 done · observations 300 = distinct 300 · duplicates 0. Cut to the real terminal output (recording R5). Narration: "Here's the part I'm most proud of. I start two workers on three hundred tasks and kill one of them, hard, three seconds in. Its leases expire, the other worker reclaims them, and the run finishes: three hundred of three hundred, and exactly three hundred stored pages. Zero duplicates."
 
-### 8. Scale: horizontal workers and self-healing (5:45–6:45)
-- **Screen:** terminal.
-  ```bash
-  bash scripts/demo_two_workers.sh     # 2 worker processes on one queue; kill -9 one mid-run
-  ```
-- **Say:**
-  - "Two worker processes share one PostgreSQL queue. Claims use `FOR UPDATE SKIP LOCKED`, and every lease has a fencing token and a heartbeat."
-  - "I kill one worker with kill -9 mid-run. The survivor and the reaper reclaim its expired leases."
-  - "The output shows every task done exactly once: observations equal distinct tasks, with zero duplicates."
-  - "Adding machines means pointing more workers at the same database and a shared raw-store mount."
-- **Then:** page 1 of the PDF (500k projection and benchmark).
-- **Say:**
-  - "Measured: 147 tasks per second with 4 slots on loopback, 0.02% retries in the live run."
-  - "At 500k, the limits are the upstream source rate limits and the LLM token quota, not the code."
-  - "Known limits: per-site pacing is per process, so the site rate is the limit times the number of workers; a shared token bucket is the next step. The billed-spend cap and LLM quota are already shared through PostgreSQL."
+### Ch 4 · Freshness (5:40–7:00)
+- **Visual:** a timeline ruler with the cutoff at the right edge and a glowing 24 h window:
+  - "2 hours ago" turns into a short bar anchored at fetch time, and fits inside the window.
+  - A date with no timezone stretches ±14 h; if it pokes outside the window, it is rejected.
+  - Two conflicting dates appear, then a quarantine bin.
+  - A dateless item gets a "new since last run" flag, and is still not exported.
+  - A job board's posting with no publish time gets grey "missing evidence".
+- **Narration:** "Freshness isn't a date comparison, it's interval logic. Every publication time becomes an interval. 'Two hours ago' is anchored to when we fetched the listing. A timestamp with no timezone could be off by up to fourteen hours, so it's widened. A row is exported only if its entire interval sits inside the last twenty-four hours before the cutoff. Conflicting dates go to quarantine. A page with no date can be flagged as new since the last run, but it's never sold as fresh. That's why the Jobs tab is small: we would rather show seven true jobs than seventy guesses."
 
-### 9. Anti-bot strategy (6:45–7:15)
-- **Screen:** the README's "Phase V" section.
-- **Say:**
-  - "Official feeds and APIs come first. Every class in this run uses one."
-  - "One polite client per site: stable User-Agent, 2 concurrent requests with pacing, Retry-After and robots.txt honored."
-  - "Cloudflare, DataDome and captcha pages are detected and recorded as blocked. We don't solve or evade them."
-  - "Ars Technica article pages sat behind an AWS WAF captcha. The pipeline kept the RSS discovery and took full text from other publishers."
-  - "JavaScript-rendered sites would go to Playwright render slots behind the same queue, only where access is permitted."
+### Ch 5 · The LLM engine (7:00–9:50)
+- **5a, why and when (7:00–7:30).** Visual: a product's homepage with an empty "owner" field; a job posting with an empty "remote?" field. Narration: "Structured data covers most fields. When a required field isn't there, like who owns a product or whether a job is remote, the LLM reads the page."
+- **5b, segments and chunking (7:30–8:15).** Visual:
+  - The page is sliced into labelled segment cards.
+  - A budget meter: context − reserved output − instructions − safety margin.
+  - Cards pack into chunks sized to the smallest tier (Groq: 8,000 tokens per minute).
 
-### 10. Engineering rigor: tests and gates (7:15–7:40)
-- **Screen:**
-  ```bash
-  SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates 2>&1 | tail -2
-  .venv/bin/python tools/gate.py status
-  ```
-- **Say:** "Every build block had failing tests written first, a gate, and an independent review; the review log is in `notes/reviews`. 395 cases pass under both UTC and India time zones. The B9 gate stays open only until the public Sheet is published."
+  Narration: "The page is cleaned and cut into labelled segments. A planner packs them into chunks that fit the tightest model in the chain, after reserving room for instructions and output. That's how payloads never trigger a 413."
+- **5c, the LangGraph flow (8:15–8:45).** Visual: nodes light up in sequence (budget → segment → cache → plan → call_llm → validate → merge → finalize). A red "413" bounces from call_llm back to "rebudget", which splits a chunk in half. Narration: "The extraction is a LangGraph state graph. If a provider still says 'too large', the graph loops back, splits the chunk smaller and tries again, with a hard limit on depth and never re-sending the same bytes."
+- **5d, the fallback chain (8:45–9:20).** Visual: three gates (Gemini 2.5 Flash · Groq gpt-oss-120b · Meta muse-ember):
+  - Gemini's light turns amber with "429 Retry-After: 120 s" and a cooldown clock. The ticket slides to Groq.
+  - Groq answers, or shows a "too large" note and passes to Meta.
+  - A quota meter next to each gate fills before every call. The Meta gate shows "$ cap 5.00".
 
-### 11. Honest limits and close (7:40–8:00)
-- **Say:**
-  - "Known limits are written in the README:
-    - 1,166 paper dates are month precision, taken from the arXiv ID, because arXiv's export API is robots-blocked.
-    - The Jobs count is small because we don't guess.
-    - Three relaunched products are counted twice."
-  - "Thanks. The repo and the Sheet are linked in the submission."
+  Narration: "Calls go through a LiteLLM router: Gemini first, then Groq, then Meta's model. On a 429 it backs off exponentially with jitter. If the server asks for a long wait, that tier cools down and the next one takes over. Before every single call, a hook reserves quota in PostgreSQL, so the free-tier limits are respected across all workers, and the one billed tier has a hard five-dollar cap."
+- **5e, grounding, the anti-hallucination wall (9:20–9:50).** Visual: the model returns an answer card: owner = "Agent CRM", quote "author: Agent CRM". The highlighter finds it in `seg:0002:meta`, and the card turns green. Then OpenAI job: is_remote = false, quote "…hybrid work model of 3 days in the office…", green. Then a demo pricing claim whose quote doesn't support the label: red stamp "REJECTED". Cut to the real terminal (recording R3). Narration: "And this is the wall against hallucination. The model must return a verbatim quote and the segment it came from. We check that the quote is really on the page, that it's about the right company, and that the value is in the quote. Agent CRM: verified. OpenAI's 'hybrid, three days in office': remote equals false, verified. A claim the page doesn't support: rejected. The model can propose, but only the page can prove."
 
----
+### Ch 6 · Entity resolution (9:50–11:10)
+- **Visual:**
+  - Bubbles "OpenAI", "OpenAI, Inc.", "Open AI" drift and snap into one node "OpenAI" (trusted id / approved alias).
+  - "Demodesk GmbH" snaps to "Demodesk".
+  - "Centauri AI" approaches "Centaur", and a dotted line says "0.88 · suggestion only", with no merge.
+  - Counter: 3,109 mentions → 392 matched · 863 abstained · 1,854 new · false merges 0.
+  - The seed list badge: 103 = 50 YC + 53 AI labs.
+- **Narration:** "Next, identity. Normalization strips legal suffixes, accents and spacing, so OpenAI, OpenAI Inc. and Open AI become one canonical entity. Matches need a trusted source ID or an approved alias. A generic single-word name needs corroboration. pgvector embeddings help by suggesting near matches, like Centauri AI and Centaur, but they never merge anything on their own. On the test set that's precision one point oh, with zero false merges."
 
-## Numbers cheat sheet
+### Ch 7 · Scaling to 500,000 (11:10–12:30)
+- **Visual:**
+  - The single worker multiplies into a grid of machines, all pointing at one PostgreSQL elephant.
+  - Gauges: pipeline throughput 147 tasks/s (4 slots, loopback). Upstream limits: GitHub at 5,000 req/h per token (~1 h with GraphQL batches of 100 at 500k); LLM tokens per day.
+  - The bottleneck needle sits on "upstream limits", not "code".
+  - A checklist animates: same DB · shared raw-store mount · unique worker IDs · pacing ÷ workers.
+- **Narration:** "Scaling to five hundred thousand records means adding workers, not changing code. They all share one queue, writes are fenced, and quotas live in the database. The pipeline itself measured around a hundred and fifty tasks a second on four slots. At that scale the real limits are the sources' own rate limits and the LLM token budget, and the architecture document shows the math. For multiple machines you share the raw-store mount, give each worker an ID, and divide per-site pacing by the number of workers."
 
-| What | Value | Source |
+### Ch 8 · Proof: the real thing (12:30–14:10)
+- **Visual:** real recordings with light animated callouts:
+  - **R1:** Sheet tour. Six tabs; zoom on the `recordType`, `source.url`, `lineageMode=live` columns.
+  - **R2:** trace one row live. Sheet `source.url` → the browser page → the same value, with a green tick overlay.
+  - **R3:** `demo_llm_extract.py`, normal and `--skip gemini`, showing the fallback.
+  - **R4:** the test suite: 395 passed; `tools/gate.py status`.
+  - **R5:** `scripts/demo_two_workers.sh` → `RESULT: PASS`.
+- **Narration:** "Now the real thing, not animation. Here's the published Sheet with six tabs. Pick any row: copy the source URL, open it, and the value is right there. Here's a live extraction through the chain, and here it is again with Gemini switched off, falling over to Groq. Three hundred ninety-five tests pass in two time zones, and every build stage went through failing tests first, a gate and an independent review."
+
+### Ch 9 · Honest limits and close (14:10–15:00)
+- **Visual:**
+  - A calm checklist card, "Known limits":
+    - Paper dates: 1,166 at month precision (`YYYY-MM`) from the arXiv ID.
+    - Per-site pacing is per worker, with a shared token bucket next.
+    - A few blocked or client-rendered boards.
+  - Final card: logo "Frontier Atlas", repo URL, Sheet URL. Atlas waves.
+- **Narration:** "It isn't perfect, and the gaps are written down: some paper dates are month precision because arXiv blocks automated date lookups, per-site pacing is per worker for now, and a few job boards block bots or render client-side, so we respect that instead of forcing it. What you get is a pipeline that scales out, heals itself, and never puts a value in the sheet that a real page can't back up. Thanks for watching. The repo and the live Sheet are linked below."
+
+## 4. Real recordings to capture (you record these; Codex places them)
+
+Save them as MP4s (1920×1080, 30 fps) in `video/app/public/recordings/`, using the filenames below. Codex shows a labelled placeholder until each file exists.
+
+| File | What to record | Command / action |
 | --- | --- | --- |
-| Live run | `a4fee584-3ac1-4188-95f4-19d7742dbd33` | `var/live/exports/` |
-| Cutoff | 2026-11-23T08:53:50Z (14:23:50 IST) | release manifest |
-| Startups / Products / Papers | 1,906 / 1,195 / 1,656 | `b8-status` |
-| Jobs / News / Mapping Log | 7 / 15 / 3,109 | export manifest |
-| Seeds | 103 (50 YC + 53 OpenRouter labs) | `config/seeds.live.json` |
-| Resolution | 392 match / 863 abstain / 1,854 new; gate set P = R = 1.0, FP 0 | `resolve`, `artifacts/gates/b6_metrics.json` |
-| LLM tiers | Gemini 2.5 Flash → Groq gpt-oss-120b → Meta muse-ember-1.0 | `config/providers.yaml` |
-| LLM grounded live rows | 2 product owners + 4 job remote flags (2 rejected) | `var/live/manifests/` |
-| Spend | free tiers $0; Meta ≈ $0.001 (cap $5) | quota ledger |
-| Benchmark | 112.9 / 147.7 tasks/s (1 / 4 slots, loopback) | `artifacts/gates/b7_benchmark.json` |
-| Recovery | kill -9 → 12/12 healed in 11.2 s, 0 duplicates | `artifacts/gates/r1_kill9_demo.txt` |
-| Two-worker demo | 2 workers, 300 tasks, kill -9 one at 3 s → 300/300 done, 300 obs = 300 distinct | `scripts/demo_two_workers.sh` |
-| Tests | 395 passed (UTC and Asia/Kolkata), gates B0–B8 PASS | `tools/gate.py` |
+| `R1_sheet_tour.mp4` (20 s) | the Google Sheet, scrolling through the 6 tabs | open the Sheet link; zoom to 125% |
+| `R2_trace_row.mp4` (20 s) | one row's `source.url` opened in the browser | e.g. Products → Demodesk → `https://demodesk.ai/` and `https://agipicks.com/tools/demodesk/` |
+| `R3_llm_fallback.mp4` (30 s) | live grounded extraction and the fallback | `.venv/bin/python scripts/demo_llm_extract.py`, then `... --skip gemini` |
+| `R4_tests.mp4` (15 s) | test suite and gates | `SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates \| tail -2` and `.venv/bin/python tools/gate.py status` |
+| `R5_two_workers.mp4` (25 s) | horizontal workers and kill -9 | `bash scripts/demo_two_workers.sh` |
 
-## Likely reviewer questions
+Before recording:
+- Run `brew services start postgresql@16` and `source .venv/bin/activate`.
+- Set the terminal font to 18–20 pt with a dark theme.
+- **Never show `.env`**, browser profiles or emails.
 
-- **"Does it really scale horizontally?"** Yes for correctness. Any number of `work` processes can share one PostgreSQL queue, and SKIP LOCKED, fencing tokens and unique keys prevent duplicate effects. Three caveats:
-  - Across machines the raw store needs a shared mount (an absolute `SIGNAL_INGEST_RAW_ROOT_LIVE`).
-  - Per-site pacing is per process. Today you divide the per-site limit by the worker count; the upgrade is a shared token bucket.
-  - LLM quota and billed spend are already enforced in PostgreSQL across processes.
-- **"Why not bypass Cloudflare?"** Bypassing protections breaks site terms and doesn't hold up as a production approach. We detect the challenge, back off and use licensed feeds or APIs. That's also why every row is traceable.
-- **"Why so few jobs?"** The brief requires guaranteed 24-hour freshness and a remote flag. Postings without an exact publish time or a source-backed (or quote-grounded) remote flag are left out. The 24-hour window also limits how many qualify at any moment.
-- **"Why are some paper dates YYYY-MM?"** OpenAlex merges preprints into journal works, so its date can be from a different version. We keep it only when it falls in the arXiv v1 month encoded in the ID. Otherwise we export that month, which is valid reduced-precision ISO-8601, rather than invent a day.
-- **"Where is the LLM used?"** Whenever a required field isn't in a structured source: product owners on vendor pages, and job remote status. Every value needs a verbatim quote inside the fetched page. Bulk rows come from structured data, which is cheaper and exact at scale.
+## 5. Production checklist
+1. Give Codex the prompt in [`video/CODEX_PROMPT.md`](video/CODEX_PROMPT.md).
+2. Record R1–R5 and drop them into `video/app/public/recordings/`.
+3. Voiceover. Either record the narration above yourself (best; `video/app/public/audio/vo_chXX.mp3` per chapter), or use the TTS placeholder Codex generates and replace it later.
+4. Preview with `cd video/app && npx remotion studio`; render with `npx remotion render`.
+5. Watch it once muted, to check that captions alone tell the story, and once at 1.5× to check pacing.
+6. Upload, then paste the link into the form.
 
-## Recording tips (Astra)
-- Record at 1080p. Cut each scene separately and stitch them; pre-run the commands so outputs appear quickly.
-- Show captions for the key numbers, taken from the cheat sheet.
-- Keep the Sheet zoomed so the column names are readable, and freeze the header row.
-- Don't show the `.env` file, browser profile names or emails.
+## 6. Numbers cheat sheet (all from `video/facts.json`)
+
+| What | Value |
+| --- | --- |
+| Rows | Startups 1,906 · Products 1,195 · Papers 1,656 · Jobs 7 · News 15 · Mapping Log 3,109 |
+| Cutoff | 2026-11-23T08:53:50Z (14:23:50 IST) |
+| LLM chain | Gemini 2.5 Flash → Groq gpt-oss-120b → Meta muse-ember-1.0 ($5 cap) |
+| Resolution | 103 seeds · 3,109 mentions → 392 match / 863 abstain / 1,854 new · gate P = R = 1.0, FP 0 |
+| Scale | 2 workers + kill -9 → 300/300, 0 duplicates · 147.7 tasks/s (4 slots) · live retries 0.02% |
+| Tests | 395 passed (UTC and Asia/Kolkata), gates B0–B8 PASS |

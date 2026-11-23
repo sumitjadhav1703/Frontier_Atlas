@@ -1,0 +1,163 @@
+{
+  "project": "Frontier Atlas · signal-ingest",
+  "repo": "https://github.com/sumitjadhav1703/Frontier_Atlas",
+  "sheet": "https://docs.google.com/spreadsheets/d/1cNBMMtAjfSz7o9VXdL2qzBd5I7lfzYyLAZNdFOzHi9w/edit?usp=sharing",
+  "run_id": "a4fee584-3ac1-4188-95f4-19d7742dbd33",
+  "cutoff_utc": "2026-11-23T08:53:50Z",
+  "cutoff_ist": "2026-11-23 14:23:50 IST",
+  "counts": {
+    "Startups": 1906,
+    "Products": 1195,
+    "Research Papers": 1656,
+    "Jobs": 7,
+    "News": 15,
+    "Entity Mapping Log": 3109
+  },
+  "sources": {
+    "Startups": "yc-oss tags/ai.json",
+    "Products": "AgiPicks open dataset (CC BY 4.0) + OpenRouter model directory",
+    "Research Papers": "pwc-archive paper→code links + OpenAlex (CC0) + GitHub REST stars",
+    "Jobs": "Ashby public posting API (25 AI-company boards) + 5 AI job boards",
+    "News": "Guardian, TechCrunch, MIT News, ScienceDaily (RSS + full text)"
+  },
+  "llm_chain": [
+    "Gemini 2.5 Flash (free)",
+    "Groq gpt-oss-120b (free, 8000 TPM)",
+    "Meta muse-ember-1.0 (billed credits, $5 cap)"
+  ],
+  "langgraph_nodes": [
+    "budget",
+    "segment",
+    "cache_lookup",
+    "plan",
+    "call_llm",
+    "rebudget (loop on 413)",
+    "validate",
+    "merge",
+    "finalize"
+  ],
+  "retry_policy": "LiteLLM backoff 0.5*2^n s (cap 8 s) + up to 0.75 s jitter; Retry-After <= 15 s honored, longer cools the tier and falls over",
+  "grounded_examples": [
+    {
+      "case": "product owner",
+      "page": "www.agent-crm.com",
+      "value": "Agent CRM",
+      "quote": "author: Agent CRM",
+      "provider": "gemini",
+      "decision": "accepted"
+    },
+    {
+      "case": "job remote flag",
+      "company": "OpenAI",
+      "value": false,
+      "quote": "This role is based in San Francisco, CA. We use a hybrid work model of 3 days in the office per week",
+      "provider": "gemini",
+      "decision": "accepted"
+    },
+    {
+      "case": "demo pricing claim",
+      "value": null,
+      "quote": "Acme Notes Pro costs $12 per month. A free plan is available.",
+      "decision": "rejected (quote does not support the label)"
+    }
+  ],
+  "resolution": {
+    "seeds": 103,
+    "seed_mix": "50 YC startups + 53 labs from OpenRouter's directory",
+    "mentions": 3109,
+    "match": 392,
+    "abstain": 863,
+    "new": 1854,
+    "gate_precision": 1.0,
+    "gate_recall": 1.0,
+    "false_merges": 0,
+    "examples": [
+      [
+        "OpenAI, Inc.",
+        "OpenAI"
+      ],
+      [
+        "Open AI",
+        "OpenAI"
+      ],
+      [
+        "Demodesk GmbH",
+        "Demodesk"
+      ]
+    ],
+    "embedding_suggestion_example": [
+      "Centauri AI",
+      "Centaur (0.88) — suggestion only, never merged"
+    ]
+  },
+  "scale": {
+    "two_worker_demo": "2 workers, 300 tasks, kill -9 worker A at 3 s → B reaps leases → 300/300 done, observations 300 = distinct tasks 300, RESULT PASS",
+    "kill9_recovery": "12/12 tasks healed in 11.2 s, 0 duplicate observations",
+    "benchmark_tasks_per_s": {
+      "1 slot": 112.9,
+      "4 slots": 147.7
+    },
+    "live_tasks": 11948,
+    "live_retry_rate": "0.02%",
+    "projection_500k": "pipeline ~2.8 h of stage work at 147 tasks/s; real limits are upstream (GitHub 5,000 req/h/token → ~1 h with GraphQL batches) and LLM token quotas"
+  },
+  "freshness_rule": "export only if the whole publication interval lies inside [cutoff − 24 h, cutoff]; relative dates anchored to listing fetch time; zoneless dates widened ±14 h; conflicts quarantined; no-date items flagged 'new since last run' but never exported as fresh",
+  "anti_bot": "structured feeds/APIs first; one polite client per site (stable UA, 2 concurrent, pacing, robots + Retry-After); challenges (Cloudflare, DataDome, captcha) detected and recorded as blocked — never bypassed; Ars Technica AWS WAF case → RSS kept, full text from other publishers",
+  "quarantine_examples": {
+    "missing_ownership_evidence": 175,
+    "missing_pricing_evidence": 121,
+    "remote_unspecified": "Ashby postings without a source or grounded remote flag",
+    "robots_denied": "aijobs.net /job/"
+  },
+  "tests": {
+    "passed": 395,
+    "timezones": [
+      "UTC",
+      "Asia/Kolkata"
+    ],
+    "gates": "B0–B8 PASS"
+  },
+  "sample_rows": {
+    "Startups": {
+      "recordType": "STARTUP",
+      "content.entityName": "Pulpix",
+      "content.data.employeeCount": "15",
+      "source.url": "https://www.ycombinator.com/companies/pulpix"
+    },
+    "Products": {
+      "recordType": "PRODUCT",
+      "content.productName": "Demodesk",
+      "content.startupName": "Demodesk",
+      "content.startupNameRaw": "Demodesk GmbH",
+      "content.pricingModel": "PAID",
+      "content.ownerEvidenceUrl": "https://demodesk.ai/",
+      "content.pricingEvidenceUrl": "https://agipicks.com/tools/demodesk/"
+    },
+    "Research Papers": {
+      "recordType": "RESEARCH_PAPER",
+      "content.title": "Learning Spatiotemporal Features with 3D Convolutional Networks",
+      "content.authors": "[\"Du Tran\",\"Lubomir D. Bourdev\",\"Rob Fergus\",\"Lorenzo Torresani\",\"Manohar Paluri\"]",
+      "content.github_url": "https://github.com/facebookarchive/c3d",
+      "content.github_stars": "1182",
+      "content.published_date": "2014-12",
+      "content.paper_url": "https://arxiv.org/abs/1412.0767"
+    },
+    "Jobs": {
+      "recordType": "JOB",
+      "content.company": "ElevenLabs",
+      "content.title": "Enterprise Account Executive - India",
+      "content.date": "2026-11-23T06:21:37.560000Z",
+      "content.is_remote": "True",
+      "content.role_family": "Sales",
+      "content.employerJobUrl": "https://jobs.ashbyhq.com/ElevenLabs/277de6ad-3db5-4b96-afb5-cec3d797e788"
+    },
+    "News": {
+      "recordType": "NEWS",
+      "source.name": "MIT News",
+      "content.title": "AI-driven technique could help engineers design analog chips faster and with less expense",
+      "content.date": "2026-11-23T05:00:00+00:00",
+      "content.bodyLength": "7852",
+      "content.article_url": "https://news.mit.edu/2026/ai-driven-technique-could-help-engineers-design-analog-chips-faster-and-less-expensive-1123"
+    }
+  }
+}

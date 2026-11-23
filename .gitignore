@@ -40,3 +40,7 @@ AI Engineer_Nov 2026.md
 
 # Local Sheet export for manual Google Sheets import
 *.xlsx
+
+# Remotion video project build output
+video/app/node_modules/
+video/app/out/
