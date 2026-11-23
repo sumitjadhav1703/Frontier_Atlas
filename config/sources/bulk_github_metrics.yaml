@@ -13,7 +13,7 @@ attribution: GitHub REST stargazers_count for trusted owner/repo
 domain_governor: api.github.com
 fallback: none_without_credential_or_quota
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_github_metrics/repo_metrics_20261121T190741Z.json
+probe_artifact: var/live/probes/bulk_github_metrics/repo_metrics_20261121T190741Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: c8a017161399b158707dc61ae140a7edc2b6762bcb809e872f8eccb3f900f1a6
 probe_sample_date: "2026-11-21T19:07:41.069752+00:00"

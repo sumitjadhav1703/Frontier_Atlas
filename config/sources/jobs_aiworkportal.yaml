@@ -13,8 +13,9 @@ attribution: AI Work Portal curated link joined to employer posting
 domain_governor: aijobportal.com
 fallback: alternate independent AI/ML job directory after documented reason
 detail_url_pattern: /jobs?/[^/?#]+/?$
+max_decoded_bytes: 12000000
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/jobs_aiworkportal/discovery_20261121T190723Z.json
+probe_artifact: var/live/probes/jobs_aiworkportal/discovery_20261121T190723Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: 7d97d8a9ec6ccaf4e2283a22c7d581febfd35815cdcef728b671cc50c3db2987
 probe_rate_limit_headers: "{}"

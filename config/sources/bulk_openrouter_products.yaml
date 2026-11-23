@@ -13,7 +13,7 @@ attribution: OpenRouter public /api/v1/models listing; owner = attributed displa
 domain_governor: openrouter.ai
 fallback: none; names without an owner prefix are quarantined
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_openrouter_products/listing_20261122T200842Z.json
+probe_artifact: var/live/probes/bulk_openrouter_products/listing_20261122T200842Z.json
 probe_fetch_status: ok
 probe_observed_at: "2026-11-22T20:08:42.550637+00:00"
 probe_pilot_count: 476

@@ -13,7 +13,7 @@ attribution: Ars Technica AI topic to original reporting
 domain_governor: arstechnica.com
 fallback: qualify alternate publisher AI desk before swap
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_arstechnica/discovery_20261121T190731Z.json
+probe_artifact: var/live/probes/news_arstechnica/discovery_20261121T190731Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: 2f76b6edfd8fa2eb21f6a2f96aaa95fd993db0edb70c3d86772e246ffb251897
 probe_rate_limit_headers: "{}"

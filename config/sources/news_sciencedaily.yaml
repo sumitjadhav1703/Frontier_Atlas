@@ -14,7 +14,7 @@ domain_governor: sciencedaily.com
 fallback: qualify alternate publisher AI desk before swap
 feed_url: "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml"
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_sciencedaily/discovery_20261121T190735Z.json
+probe_artifact: var/live/probes/news_sciencedaily/discovery_20261121T190735Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: d4749acaacac8002038040800a1733296070872ea50647fdcc65f2d18d099d13
 probe_rate_limit_headers: "{}"

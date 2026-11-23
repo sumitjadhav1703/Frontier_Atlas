@@ -1465,7 +1465,7 @@ async def test_r3c_two_papers_sharing_repo_both_get_stars_in_one_run(bulk_env, f
 
 # ---------------------------------------------------------------------------
 # B8 reopen: live acquisition paths (offline, loopback, FakeProvider)
-# Oracle: notes/b8-work-order.md "Sources" + "Code changes" and docs/contracts.md.
+# Oracle: notes/work-orders/b8.md "Sources" + "Code changes" and docs/contracts.md.
 # Imports stay inside each case so collection never depends on B8 code.
 # ---------------------------------------------------------------------------
 

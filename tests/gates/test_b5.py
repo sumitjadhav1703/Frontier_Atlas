@@ -1,6 +1,6 @@
 """B5 gate (R2b): LiteLLM Router chain, quota and zero-spend control.
 
-Oracle: docs/build-plan.md (B5), docs/contracts.md and notes/r2b-interface.md.
+Oracle: docs/build-plan.md (B5), docs/contracts.md and notes/work-orders/r2b-interface.md.
 A real ``litellm.Router`` is driven with fake keys; provider outcomes are
 scripted at ``litellm.acompletion`` (one call per real dispatch, after the
 chain's quota pre-call hook) and successes use LiteLLM ``mock_response``.

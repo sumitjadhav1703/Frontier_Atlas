@@ -1251,3 +1251,154 @@ def test_r3_zoneless_day_values_are_widened(value):
     assert vague is not None and vague.precision == "unknown_zone", vague
     assert vague.upper <= observed
     assert not in_freshness_window(vague, observed)
+
+
+# ---------------------------------------------------------------------------
+# B9: live monitor crawl paths (offline; loopback; network guard on)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_b9_work_routes_monitor_task_fetch_then_parse_to_news(monitor_env, frozen_clock):
+    """crawl.worker dispatches a monitor task: real loopback GET, then parse -> NEWS candidate."""
+    from signal_ingest.crawl.queue import claim_tasks, enqueue_task
+    from signal_ingest.crawl.worker import process_claimed_task
+    from signal_ingest.storage import connect, create_run
+    from tests.integration.b2_api import http_pool
+    from tests.integration.b2_listing_http import start_listing_server
+
+    html = (MONITOR_FIXTURES / "html" / "full_with_sidebar.html").read_bytes()
+    server = start_listing_server({"/2026/synth-full": ("text/html; charset=utf-8", html)})
+    article = server.url("/2026/synth-full")
+    pool = http_pool()
+    stages: list[str] = []
+    try:
+        with connect(monitor_env) as conn:
+            run_id = create_run(conn, settings=monitor_env)
+            # No `row`/`body` in the payload, so the fixture shortcut cannot synthesize a body.
+            enqueue_task(
+                conn, source_id="news_mit", url=article, stage="fetch", external_id="b9-full",
+                run_id=run_id,
+                payload={"cutoff": T.isoformat(), "title": "Synthetic full article",
+                         "expected_start": "FIRST_PARA_SYNTHETIC_START",
+                         "expected_end": "LAST_PARA_SYNTHETIC_END"},
+            )
+            conn.commit()
+            for _ in ("fetch", "parse"):
+                for task in claim_tasks(conn, worker_id="b9-work", source_id="news_mit", limit=5):
+                    stages.append(task.stage)
+                    out = await process_claimed_task(conn, task, pool=pool, settings=monitor_env)
+                    assert out["ok"] is True, out
+            rows = conn.execute(
+                "SELECT record_type, status, payload->'content'->>'text' FROM candidates "
+                "WHERE source_id = 'news_mit' AND run_id = %s", (run_id,),
+            ).fetchall()
+    finally:
+        await pool.aclose()
+        server.stop()
+    assert stages == ["fetch", "parse"]
+    assert server.item_hits() == {"/2026/synth-full": 1}, server.hits
+    assert len(rows) == 1 and rows[0][0] == "NEWS" and rows[0][1] == "accepted", rows
+    assert "LAST_PARA_SYNTHETIC_END" in rows[0][2]
+
+
+def test_b9_rss_discovery_payload_is_json_serializable(monitor_env, frozen_clock):
+    """An RSS item with pubDate must enqueue: task payload cannot carry raw datetimes."""
+    from signal_ingest.adapters.monitors import discover_and_enqueue
+    from signal_ingest.storage import connect, create_run
+
+    url = "http://127.0.0.1:9/2026/synth-rss"
+    rss = (
+        '<?xml version="1.0"?><rss version="2.0"><channel><title>Synthetic</title>'
+        f"<item><title>Synthetic RSS item</title><link>{url}</link><guid>{url}</guid>"
+        "<pubDate>Sat, 21 Nov 2026 11:00:00 GMT</pubDate></item></channel></rss>"
+    ).encode()
+    with connect(monitor_env) as conn:
+        run_id = create_run(conn, settings=monitor_env)
+        meta = discover_and_enqueue(
+            conn, source_id="news_mit", payload=rss, run_id=run_id,
+            cutoff=T, observed_at=T, base_url="http://127.0.0.1:9/",
+        )
+    assert meta["discovered"] == 1 and meta["created"] == 1, meta
+
+
+def test_b9_detail_url_pattern_drops_nav_and_auth_links(frozen_clock):
+    from signal_ingest.adapters.monitors import load_monitor_config
+    from signal_ingest.adapters.monitors.discover import discover_list
+
+    cfg = load_monitor_config("jobs_aijobs")
+    assert (cfg.raw or {}).get("detail_url_pattern")
+    base = "https://aijobs.ai/"
+    page = (
+        "<html><body><nav><a href='/'>Home</a><a href='/login'>Log in</a>"
+        "<a href='/signup'>Sign up</a><a href='/jobs/category/ml'>ML jobs</a>"
+        "<a href='/about'>About</a></nav>"
+        "<ul><li><a href='/job/ml-engineer-synth-co'>ML Engineer</a></li>"
+        "<li><a href='https://aijobs.ai/job/data-scientist-synth-labs/'>Data Scientist</a></li>"
+        "<li><a href='/job/ml-engineer-synth-co?ref=nav'>dup with query</a></li></ul>"
+        "</body></html>"
+    )
+    scan = discover_list(cfg, page, cutoff=T, observed_at=T, base_url=base)
+    paths = sorted({__import__("urllib.parse").parse.urlparse(i.url).path for i in scan.items})
+    assert paths == ["/job/data-scientist-synth-labs/", "/job/ml-engineer-synth-co"], paths
+
+
+@pytest.mark.asyncio
+async def test_b9_live_discovery_tries_feed_url_before_documented_page(monkeypatch, frozen_clock):
+    """Inventory feed_url first; documented page only when the feed fails.
+
+    Live FetchPolicy rejects loopback, so probe_url is replaced by a recorder (no network).
+    """
+    from signal_ingest.adapters.monitors import load_monitor_config
+    from signal_ingest.config import Mode, load_settings
+    from signal_ingest.crawl.types import FetchOutcomeKind
+    from signal_ingest.live import monitors as live_monitors
+    from tests.integration.b2_api import http_pool, raw_empty
+
+    cfg = load_monitor_config("jobs_moaijobs")
+    feed = (cfg.raw or {}).get("feed_url")
+    assert feed and feed != cfg.documented_access_url
+    calls: list[str] = []
+    feed_ok = {"value": True}
+
+    async def fake_probe(url, *, settings, pool=None, headers=None, max_retries=2):
+        calls.append(url)
+        if url == feed and feed_ok["value"]:
+            return _raw(url, b"<rss></rss>", content_type="application/rss+xml")
+        if url == feed:
+            return raw_empty(url, outcome=FetchOutcomeKind.NOT_FOUND, status_code=404)
+        return _raw(url, b"<html></html>", content_type="text/html")
+
+    monkeypatch.setattr(live_monitors, "probe_url", fake_probe)
+    settings = load_settings(mode=Mode.FIXTURE)
+    pool = http_pool()
+    try:
+        obs, used, tried = await live_monitors._fetch_discovery(settings, "jobs_moaijobs", cfg, pool)
+        assert calls == [feed] and used == feed
+        calls.clear()
+        feed_ok["value"] = False
+        obs, used, tried = await live_monitors._fetch_discovery(settings, "jobs_moaijobs", cfg, pool)
+        assert calls[:2] == [feed, str(cfg.documented_access_url)], calls
+        assert used == str(cfg.documented_access_url)
+        assert [t["url"] for t in tried][:2] == calls[:2]
+    finally:
+        await pool.aclose()
+
+
+@pytest.mark.asyncio
+async def test_b9_pool_accept_encoding_excludes_br_and_zstd(tmp_fixture_env):
+    from tests.integration.b2_api import http_pool
+    from tests.integration.b2_listing_http import start_listing_server
+
+    server = start_listing_server({"/x": ("text/plain", b"ok")})
+    pool = http_pool()
+    try:
+        resp = await pool.request("GET", server.url("/x"))
+        assert resp.status_code == 200
+    finally:
+        await pool.aclose()
+        server.stop()
+    accept = server.request_headers["/x"].get("accept-encoding", "")
+    codings = {c.split(";")[0].strip().lower() for c in accept.split(",") if c.strip()}
+    assert codings and not codings & {"br", "zstd"}, accept
+    assert codings <= {"gzip", "deflate", "identity"}, accept

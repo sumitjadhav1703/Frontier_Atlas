@@ -224,6 +224,15 @@ def _rate_headers(obs: RawObservation) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
+def apply_body_cap(pool: HttpPool, cfg: Any) -> None:
+    """Honor an inventory `max_decoded_bytes` override for this source's origins."""
+    cap = (cfg.raw or {}).get("max_decoded_bytes")
+    if cap:
+        for url in (cfg.documented_access_url, (cfg.raw or {}).get("feed_url")):
+            if url:
+                pool.allow_origin_body_bytes(str(url), int(cap))
+
+
 async def _fetch_discovery(
     settings: Settings, source_id: str, cfg: Any, pool: HttpPool
 ) -> tuple[RawObservation, str, list[dict[str, Any]]]:
@@ -231,6 +240,7 @@ async def _fetch_discovery(
     a challenge/denied outcome just moves on to the next documented URL."""
     tried: list[dict[str, Any]] = []
     obs: RawObservation | None = None
+    apply_body_cap(pool, cfg)
     feed = (cfg.raw or {}).get("feed_url")
     urls = ((feed,) if feed else ()) + (cfg.documented_access_url, *(_DISCOVERY_FALLBACKS.get(source_id) or ()))
     for url in urls:

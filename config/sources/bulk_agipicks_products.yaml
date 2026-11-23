@@ -13,7 +13,7 @@ attribution: AgiPicks attributed open product JSON; carry license and attributio
 domain_governor: agipicks.com
 fallback: FutureTools browse directory and YC company official product/pricing pages
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_agipicks_products/listing_20261122T200845Z.json
+probe_artifact: var/live/probes/bulk_agipicks_products/listing_20261122T200845Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: 2d8df09386bba36f5d029bfc6b0f3a3c77c81de1a1c43658770d0fb258f9391a
 probe_sample_date: "2026-11-21T19:07:38.575803+00:00"

@@ -14,7 +14,7 @@ domain_governor: theguardian.com
 fallback: qualify alternate publisher AI desk before swap
 feed_url: "https://www.theguardian.com/technology/artificialintelligenceai/rss"
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_guardian/discovery_20261121T190732Z.json
+probe_artifact: var/live/probes/news_guardian/discovery_20261121T190732Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: b2db6d1ed069e8ced0e67ce0815ac1b94ced1f6f1f6490fc23bde03740acc72f
 probe_rate_limit_headers: "{}"

@@ -14,7 +14,7 @@ domain_governor: inferencejobs.com
 fallback: alternate independent AI/ML job directory after documented reason
 detail_url_pattern: /companies/[^/?#]+/jobs/[^/?#]+/?$
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/jobs_inferencejobs/discovery_20261121T190725Z.json
+probe_artifact: var/live/probes/jobs_inferencejobs/discovery_20261121T190725Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: f45ca9fdf6d9a2130923c8eb05549cf4bcda23e60bc9af8b429a269725f680b2
 probe_rate_limit_headers: "{}"

@@ -1,151 +1,118 @@
 # AI Signal · signal-ingest
 
-Assessment pipeline for startups, products, research papers, jobs, and news.
+A resumable ingestion pipeline for AI startups, products, research papers, jobs and news. It has a grounded, multi-tier LLM extractor (LangGraph + LiteLLM Router) and deterministic entity resolution. Every exported row traces back to a fetched source URL.
 
-## Setup
+## Results (live run `a4fee584`, 2026-11-22/23)
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-cp .env.example .env
-docker compose up -d postgres
-# Or brew postgresql@16 on :5432 with SIGNAL_INGEST_DSN_* overrides (see .env.example).
-signal-ingest init-db
-```
+| Tab | Rows | Source |
+| --- | --- | --- |
+| Startups | 1,906 | yc-oss `tags/ai.json` (YC company directory mirror) |
+| Products | 1,195 | AgiPicks open dataset (CC BY 4.0): pricing from its attributed field, owner from the vendor's own homepage. OpenRouter public model directory: owner and pricing from the listing |
+| Research Papers | 1,656 | pwc-archive paper→code links (official repos only), OpenAlex metadata (CC0), GitHub REST stars |
+| Jobs / News | see release manifest | 5 AI job boards + 5 AI news sources, 24-hour window at the export cutoff |
+| Entity Mapping Log | 3,101 | raw name → canonical ID, method, decision, embedding suggestions |
 
-Default mode is `fixture` with a separate DSN, raw root, and export root from `live`.
-Network guard blocks non-loopback sockets unless explicitly disabled for live stages.
-Paid spend cap defaults to 0. Live Sheets / provider calls stay off through B7.
-
-## Fixture replay (reviewer-ready)
-
-One mixed offline path through discover → work → resume → audit → export:
-
-```bash
-signal-ingest --mode fixture init-db
-
-# Discover from labeled local fixtures (creates a run).
-signal-ingest --mode fixture crawl --source bulk.yc
-# Capture run_id from JSON, then:
-export RUN=<run_id-from-crawl>
-
-# Dual workers share Postgres + SIGNAL_INGEST_RAW_ROOT_FIXTURE via content_key.
-signal-ingest --mode fixture work --stage fetch --run "$RUN" --worker-id w1 --max-tasks 50
-signal-ingest --mode fixture work --stage parse --run "$RUN" --worker-id w2 --max-tasks 50
-
-# Kill/restart equivalent: release stale leases and continue.
-signal-ingest --mode fixture resume --run "$RUN"
-
-signal-ingest --mode fixture audit --run "$RUN"
-signal-ingest --mode fixture export --run "$RUN" --as-of 2026-11-21T12:00:00Z
-
-# Synthetic scale baseline (1k/10k × 1/4 workers) — not live throughput.
-signal-ingest --mode fixture bench
-```
-
-Other fixture sources: `bulk.products`, `bulk.papers`, `bulk.arxiv`, `bulk.github`,
-and monitor IDs such as `news_mit` / `jobs_aijobs` when fixture payloads exist under
-`tests/fixtures/`.
-
-Fixture exports land under `var/fixture/exports/<run>/<as_of>/` with a visible
-`LABEL.txt` / `NOT_FOR_LIVE_EXPORT` marker. Live export roots stay separate.
-
-## CLI
-
-| Command | Purpose |
-| --- | --- |
-| `signal-ingest --mode fixture\|live init-db` | Apply migrations for the active mode DSN |
-| `crawl --source ID [--run UUID]` | Fixture discover + enqueue |
-| `work --stage STAGE --run ID [--worker-id …]` | Claim/process under shared raw root |
-| `resume --run ID` | Release stale leases and continue |
-| `audit --run ID` | Counts, lineage, quarantines, content_key coverage |
-| `export --run ID --as-of UTC` | Six tabs → segregated local export (+ mock Sheets in fixture) |
-| `bench` | Write `artifacts/gates/b7_benchmark.json` |
-| `qualify --track …` | Live qualification (B8; requires `--mode live`) |
-
-Exact six tab names: Startups, Products, Research Papers, Jobs, News, Entity Mapping Log.
-
-## Gates
-
-```bash
-.venv/bin/python tools/gate.py status
-.venv/bin/python tools/gate.py B7   # last closed offline gate
-# B8 remains open until live ≥1000 + LLM canary; see artifacts/gates/b8_blocker.json
-```
+Offline gates B0–B8 pass: 368 cumulative cases under `TZ=UTC` and `TZ=Asia/Kolkata`. Entity resolution on the gate set scores precision 1.0 / recall 1.0 (FP 0).
 
 ## Architecture
 
-- Source: [docs/architecture-source.md](docs/architecture-source.md)
-- PDF (≤3 pages): [architecture.pdf](architecture.pdf)
-- Live measurements (bytes/item, yield, RPS, token latency, ≥1000 counts): **PENDING** — do not invent numbers.
+```
+sources ─▶ discover ─▶ PostgreSQL task queue (SKIP LOCKED leases, fencing, heartbeat,
+                        reaper, dead-letter) ─▶ async fetch pool (robots, per-origin pacing,
+                        challenge detection, capped decode) ─▶ content-addressed raw store
+        ─▶ parse / enrich (GitHub stars) ─▶ candidates + typed relationships
+        ─▶ grounded LLM extract (LangGraph graph → LiteLLM Router chain)
+        ─▶ deterministic entity resolution (+ pgvector suggestions only)
+        ─▶ six-tab export (CSV + .xlsx) at a UTC cutoff
+```
 
-## R4 · pgvector suggestions and typed relationships
+- **LLM orchestration** (`src/signal_ingest/llm/`)
+  - `graph.py` runs extraction as a LangGraph `StateGraph`: `budget → segment → cache_lookup → plan → call_llm ⇄ rebudget → merge → finalize`. A 413 or context-length error loops back to a smaller re-chunk, up to a fixed depth, and never re-sends unchanged bytes.
+  - `router.py` (`LiteLLMChain`) sends calls through a LiteLLM 1.108 LTS Router with native fallbacks. The tiers are **Gemini 2.5 Flash → Groq gpt-oss-120b → Meta Model API muse-ember-1.0**. Ollama is optional.
+  - On 429 it backs off exponentially with jitter. A Retry-After of 15 s or less is honored; a longer one cools the tier and falls over.
+  - Chunks are sized to the tightest tier.
+  - A Router `async_pre_call_check` hook reserves quota in the shared PostgreSQL ledger before every real dispatch. A billed route without a cost estimate is refused, and total spend is capped (`paid_spend_cap` in `config/providers.yaml`).
+- **Grounding**: a model value is accepted only if its quote is inside a cited, retained page segment, the quote is about the target entity, and the value appears in the quote. Everything else is rejected, never guessed.
+- **Entity resolution** (`src/signal_ingest/resolution/`):
+  - Normalization folds legal suffixes, accents and spacing, so "OpenAI", "OpenAI, Inc." and "Open AI" all resolve to OpenAI.
+  - Trusted source IDs (YC id, OpenRouter owner key) and approved aliases decide matches. Weak single-word names need corroboration.
+  - The live register holds 103 seeds: 50 YC startups plus 53 labs attributed in OpenRouter's directory.
+  - pgvector (bge-small, HNSW) only proposes `suggested_candidates`; it never merges.
+- **Freshness**: a news/job row is exported only if its whole publication interval lies inside [cutoff − 24 h, cutoff]. Relative dates ("2 hours ago") are anchored to the listing fetch time. A row with no date can be flagged "new since last run" but is never exported as fresh.
+- **Self-healing**: lease heartbeat, reaper, dead-letter + `requeue-failed`, SIGTERM drain. In the measured kill -9 recovery, 12/12 tasks were done in 11.2 s with 0 duplicate observations.
+- Full design: [architecture.pdf](architecture.pdf) (3 pages), source [docs/architecture-source.md](docs/architecture-source.md).
 
-- `migrations/009_r4_vector.sql` adds `entities.embedding vector(384)` + `embedding_model` (HNSW cosine index) and `relationships.evidence_observation_id`, `valid_from`, `valid_to`, plus a CHECK on the relationship types.
-- `resolution/embed.py`: `embed_entities(conn, FastEmbedder())` embeds name + description with `BAAI/bge-small-en-v1.5`. `suggest_candidates(...)` returns HNSW top-k candidates above 0.85 cosine.
-- Embeddings only suggest. Deterministic rules make every merge, so the B6 FP=0 gate is unchanged. `annotate_mapping_suggestions` fills the Entity Mapping Log `suggested_candidates` column.
-- `flag_near_duplicate_news` sets `nearDuplicateOf` on same-run News rows with title cosine ≥0.95. It never drops a row.
-- Both columns appear in exports only when embeddings produced a value. Exports without embeddings are byte-identical to the earlier ones.
-- Graph demo: `docs/queries/papers_by_yc_startups.sql` (a `WITH RECURSIVE` query over relational edges, up to 6 OWNS hops), run by `resolution.graph_queries.papers_by_yc_startups(conn)`. It is tested on synthetic edges. The bulk adapters do not yet write organization→repository OWNS edges, so on live data it returns rows only after such edges exist.
+## Setup
 
-## Phase V · Challenged monitor case (`news_arstechnica`)
+Requires Python 3.13 (litellm's clean releases declare `<3.15`), PostgreSQL 16 with pgvector, and `uv`.
 
-High-value news source with an observed detail-route challenge during B8 qualification.
+```bash
+uv venv --python 3.13 .venv
+VIRTUAL_ENV=.venv uv pip sync --require-hashes requirements.lock
+VIRTUAL_ENV=.venv uv pip install --no-deps -e .
+cp .env.example .env            # then add your own keys; never commit .env
+brew services start postgresql@16   # or: docker compose up -d postgres
+# pgvector for PG16: build v0.8.7 from source with PG_CONFIG=$(brew --prefix postgresql@16)/bin/pg_config
+.venv/bin/signal-ingest init-db
+```
+
+The default mode is `fixture`, with a separate DSN, raw root and export root from `live`. The network guard blocks non-loopback sockets except in live stages.
+
+**Keys** (live only, read from `.env` at runtime):
+- `GEMINI_API_KEY`, `GROQ_API_KEY` (free tiers)
+- `MODEL_API_KEY` (Meta Model API, optional, billed)
+- `GITHUB_TOKEN` (public star counts)
+
+## Run
+
+Offline replay, no network:
+
+```bash
+signal-ingest --mode fixture crawl --source bulk.yc          # prints run_id
+signal-ingest --mode fixture work --stage any --run "$RUN" --drain
+signal-ingest --mode fixture export --run "$RUN" --as-of 2026-11-21T12:00:00Z
+```
+
+Live acquisition (`scripts/b8_live_run.sh` has the full sequence):
+
+```bash
+export SIGNAL_INGEST_MODE=live SIGNAL_INGEST_NETWORK_GUARD=0
+signal-ingest crawl --source bulk.yc                        # creates RUN
+signal-ingest crawl --source bulk.openrouter --run "$RUN"   # also bulk.products, bulk.papers
+signal-ingest crawl-monitors --run "$RUN"                   # 10 news/job monitors
+signal-ingest work --stage any --run "$RUN" --concurrency 8 --drain
+signal-ingest owner-llm --run "$RUN" --limit 40             # grounded LLM owner fallback
+signal-ingest resolve --run "$RUN" --embed                  # entity resolution + suggestions
+signal-ingest export --run "$RUN" --as-of "$(date -u +%FT%TZ)"
+signal-ingest export-xlsx --snapshot var/live/exports/$RUN/<snapshot>
+signal-ingest b8-status                                     # recompute counts from the export
+```
+
+Other commands: `resume`, `audit`, `requeue-failed`, `qualify`, `bench`, `render-pdf`.
+
+## Tests and gates
+
+```bash
+SIGNAL_INGEST_MODE=fixture SIGNAL_INGEST_NETWORK_GUARD=1 .venv/bin/python -m pytest -q tests/gates
+.venv/bin/python tools/gate.py status
+```
+
+Each block has a review in `notes/reviews/Bn.md`, and every attempt is logged in `notes/progress.md`, including failures and deviations.
+
+## Phase V · challenged monitor case (`news_arstechnica`)
 
 | Field | Observed |
 | --- | --- |
-| Source | `news_arstechnica` |
-| Discovery | RSS `https://feeds.arstechnica.com/arstechnica/index` → HTTP 200, ordered feed, 20 items scanned |
-| Detail block | Article HTML hit AWS WAF captcha (`x-amzn-waf-action: captcha`) and returned HTTP 405 / invalid body |
-| Classification | Challenge / blocked detail route — **not** solved; no captcha-bypass dependency |
-| Permitted alternate | Keep RSS discovery + watermark; skip captcha HTML; use another qualified publisher for full-body coverage when detail is required |
-| Sample traced release row | **PENDING** (no live release export yet) |
-| Coverage lost | Full HTML body + original page evidence for challenged article URLs until an approved alternate detail path exists |
+| Discovery | RSS `https://feeds.arstechnica.com/arstechnica/index` → HTTP 200, ordered feed |
+| Detail block | Article HTML hit an AWS WAF captcha (`x-amzn-waf-action: captcha`), HTTP 405 |
+| Handling | Classified as challenged and **not** bypassed. Keep RSS discovery + watermark; take full-body coverage from other qualified publishers |
+| Cost | Full body for challenged article URLs is missing until an approved alternate detail path exists |
 
-Evidence: `var/live/manifests/monitors_qualification.json` (`source_id=news_arstechnica`). Fixture challenge handling remains covered in B1.
+Other observed limits: aijobs.net robots disallows `/job/`, so it is respected and skipped. One AI-community board renders its jobs client-side, so its HTML has no job links. Postings without a source-backed remote flag are quarantined, never guessed.
 
-## B9 release handoff (local scaffold)
+## Known deviations
 
-**Status:** `awaiting_b8` (B8 blocked). After B8 closes without a published Sheet, status becomes `awaiting_publication`. Do **not** report **ready** or **submitted** until viewer checks and form receipt exist.
-
-| State | Meaning |
-| --- | --- |
-| ready | Local packet complete **and** public Sheet verified (workbook_id + two signed-out checks) — packet prepared, form **not** yet sent |
-| submitted | Applicant completed [submission form](https://forms.gle/3JJhukomumTFueRW7) with verified repo + Sheet links; keep form receipt separately |
-
-Manifest: `artifacts/release/release_manifest.json` (`workbook_id: null`, viewer checks `pending`).
-
-### Commands (local only — no publish)
-
-```bash
-# Offline smoke (clean checkout style)
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-signal-ingest --mode fixture init-db
-# … fixture replay commands above …
-
-# Refresh local release scaffold after PDF/docs change
-.venv/bin/python -c "
-from signal_ingest.release import (
-    build_scaffold_manifest, write_release_manifest,
-    render_architecture_pdf, sha256_file, count_pdf_pages,
-)
-p = render_architecture_pdf()
-m = build_scaffold_manifest(
-    status='awaiting_b8',
-    pdf_sha256=sha256_file(p),
-    pdf_pages=count_pdf_pages(p),
-    repo_rev=None,
-)
-print(write_release_manifest(m))
-"
-```
-
-### Ready vs still pending
-
-**Ready locally (scaffold):** `README.md`, `src/`, `architecture.pdf`, architecture source, B0–B7 receipts, B8 blocker + live pilot manifests, release manifest writer.
-
-**Not ready (do not fabricate):** live ≥1000/class export, live LLM→row lineage, `workbook_id` / Sheet URL, signed-out viewer checks, form submit.
-
-Submission form (applicant-owned): https://forms.gle/3JJhukomumTFueRW7
+- Paper `published_date`: OpenAlex merges preprints into journal works. Its date is kept only when it falls in the arXiv v1 month encoded in the ID; otherwise the export gives that month as ISO-8601 `YYYY-MM`.
+- Three relaunch duplicates remain among products: 1,192 unique, still ≥ 1,000.
+- The Meta tier uses the owner's prepaid credits under a $5 cap. All other tiers are free, local or fake.
+- The graph demo query (`docs/queries/papers_by_yc_startups.sql`) is tested on synthetic edges. Live organization→repository OWNS edges are not yet extracted.

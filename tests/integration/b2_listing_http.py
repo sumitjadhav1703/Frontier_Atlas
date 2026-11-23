@@ -17,6 +17,7 @@ class ListingServer:
     base_url: str
     routes: dict[str, tuple[str, bytes]]
     hits: dict[str, int] = field(default_factory=dict)
+    request_headers: dict[str, dict[str, str]] = field(default_factory=dict)
     _httpd: ThreadingHTTPServer | None = None
     _thread: threading.Thread | None = None
 
@@ -49,6 +50,7 @@ def start_listing_server(routes: dict[str, tuple[str, bytes]]) -> ListingServer:
             path = urlsplit(self.path).path
             with lock:
                 server.hits[path] = server.hits.get(path, 0) + 1
+                server.request_headers[path] = {k.lower(): v for k, v in self.headers.items()}
             route = server.routes.get(path)
             if route is None:
                 self.send_response(404)

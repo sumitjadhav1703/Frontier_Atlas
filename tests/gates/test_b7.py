@@ -1162,7 +1162,7 @@ def test_r3_export_freshness_judges_whole_publication_interval():
 
 
 # ---------------------------------------------------------------------------
-# R4 — nearDuplicateOf / suggested_candidates export columns (notes/r4-work-order.md)
+# R4 — nearDuplicateOf / suggested_candidates export columns (notes/work-orders/r4.md)
 # Offline FakeEmbedder only; synthetic fixture rows, not for live export.
 # ---------------------------------------------------------------------------
 

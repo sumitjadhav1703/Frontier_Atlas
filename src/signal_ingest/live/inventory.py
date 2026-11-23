@@ -58,9 +58,14 @@ def update_source_status(
         "error": "probe_error",
         "pilot_count": "probe_pilot_count",
     }
+    root = str(Path(__file__).resolve().parents[3]) + "/"
     for src_key, yaml_key in mapping.items():
         if src_key in probe and probe[src_key] is not None:
-            data[yaml_key] = probe[src_key]
+            value = probe[src_key]
+            # Committed inventory must not carry local absolute paths.
+            if isinstance(value, str) and value.startswith(root):
+                value = value[len(root):]
+            data[yaml_key] = value
     _write_flat_yaml(path, data)
     return path
 

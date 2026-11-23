@@ -13,7 +13,7 @@ attribution: yc-oss unofficial AI-tag JSON; keep original YC profile URL and sou
 domain_governor: ycombinator.com
 fallback: official YC AI directory organization pages and a second documented directory
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/bulk_yc_startups/listing_20261122T200841Z.json
+probe_artifact: var/live/probes/bulk_yc_startups/listing_20261122T200841Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: ddb49dda1df2223880ce4e5582248c3ffe01782db551171838eb35cfec06a06d
 probe_sample_date: "2026-11-21T19:07:37.239050+00:00"

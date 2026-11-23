@@ -56,6 +56,11 @@ async def process_claimed_task(
     from signal_ingest.adapters.monitors.pipeline import MONITOR_SOURCES, process_monitor_task
 
     if task.source_id in MONITOR_SOURCES:
+        from signal_ingest.adapters.monitors.config import load_monitor_config
+
+        mcfg = load_monitor_config(task.source_id)
+        if (mcfg.raw or {}).get("max_decoded_bytes"):
+            pool.allow_origin_body_bytes(task.url, int(mcfg.raw["max_decoded_bytes"]))
         # Monitor fetch -> parse. Live parse judges freshness at the list observation time
         # (export re-filters at its own cutoff); fixture keeps cutoff=None semantics.
         cutoff = None

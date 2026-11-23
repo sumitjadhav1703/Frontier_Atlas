@@ -1,16 +1,36 @@
+# Python / tooling
 .venv/
+.venv-*/
 __pycache__/
+*.pyc
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.log
+
+# Secrets: real keys live only in .env (never commit)
 .env
 .env.*
 !.env.example
-artifacts/
+
+# Runtime data: raw snapshots, exports, model cache, gate receipts (machine-local paths)
 var/
+artifacts/
+
+# Local editor / agent state
 .DS_Store
-.venv-*/
-*.pyc
-*.egg-info/
-.impeccable/
+.idea/
+.vscode/
+.claude/
 .cursor/
-.venv-py315.bak/
+.impeccable/
+
+# Private planning notes (owner decision)
+START-HERE.md
+cursor.md
+
+# Stray local file
+/0

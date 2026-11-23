@@ -14,7 +14,7 @@ domain_governor: techcrunch.com
 fallback: qualify alternate publisher AI desk before swap
 feed_url: "https://techcrunch.com/category/artificial-intelligence/feed/"
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_techcrunch/discovery_20261121T190736Z.json
+probe_artifact: var/live/probes/news_techcrunch/discovery_20261121T190736Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: 65a3b0a2ad2abfc1d37f520c6665a552ca1825c058afbbfb565e3e47bd7b6447
 probe_sample_date: "2026-11-21T04:00:00+00:00"

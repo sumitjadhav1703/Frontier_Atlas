@@ -744,7 +744,7 @@ def test_r3_plain_word_seed_names_need_corroboration():
 
 
 # ---------------------------------------------------------------------------
-# R4 — pgvector candidate suggestions + typed relationships (notes/r4-work-order.md)
+# R4 — pgvector candidate suggestions + typed relationships (notes/work-orders/r4.md)
 # Offline: FakeEmbedder (hashed bag-of-words, 384 dims). No model download.
 # ---------------------------------------------------------------------------
 
@@ -1195,3 +1195,162 @@ def test_r4_resolver_cannot_read_embeddings():
     for name in ("resolve.py", "register.py", "normalize.py"):
         text = (src / name).read_text(encoding="utf-8")
         assert "embed" not in text.replace("embedded", ""), name
+
+
+# ---------------------------------------------------------------------------
+# B9: live lab seeds from a run + run-level resolution
+# ---------------------------------------------------------------------------
+
+
+class _B9Conn:
+    """connect() stand-in returning canned grouped bulk.openrouter rows (no DB)."""
+
+    def __init__(self, rows):
+        self.rows = rows
+        self.sql: list[str] = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def execute(self, sql, params=None):
+        self.sql.append(sql)
+        rows = self.rows
+
+        class _Cur:
+            def fetchall(self_inner):
+                return list(rows)
+
+        return _Cur()
+
+
+def test_b9_known_lab_seeds_from_run_idempotent_no_aliases(tmp_fixture_env, tmp_path, monkeypatch):
+    import shutil
+
+    import signal_ingest.storage.db as storage_db
+    from signal_ingest.config import Mode, load_settings
+    from signal_ingest.live.seeds import (
+        DEFAULT_LIVE_SEEDS_PATH,
+        build_known_lab_seeds_from_run,
+    )
+
+    monkeypatch.setenv("SIGNAL_INGEST_EXPORT_ROOT_LIVE", str(tmp_path / "exports_live"))
+    settings = load_settings(mode=Mode.LIVE)
+    register = tmp_path / "seeds.live.json"
+    shutil.copy(DEFAULT_LIVE_SEEDS_PATH, register)
+    base = len(json.loads(register.read_text(encoding="utf-8"))["identities"])
+    # (owner_key, owner_name, n), pre-sorted like the SQL: key, n desc, name.
+    canned = [
+        ("qzx-synthlab", "Qzx Synthlab", 3),
+        ("qzx-synthlab", "Qzx Synthlab Inc", 1),
+        ("vrb-fixturelab", "Vrb Fixturelab", 2),
+    ]
+    monkeypatch.setattr(storage_db, "connect", lambda _settings: _B9Conn(canned))
+
+    counts = []
+    for _ in range(2):
+        out = build_known_lab_seeds_from_run(settings, "b9-run", path=register)
+        assert out == register
+        doc = json.loads(register.read_text(encoding="utf-8"))
+        counts.append(len(doc["identities"]))
+    assert counts[0] == counts[1] == base + 2, (base, counts)
+    labs = {i["id"]: i for i in doc["identities"] if i["id"].startswith("live.lab.openrouter.")}
+    new = {k: v for k, v in labs.items() if k.endswith(("qzx-synthlab", "vrb-fixturelab"))}
+    assert set(new) == {"live.lab.openrouter.qzx-synthlab", "live.lab.openrouter.vrb-fixturelab"}
+    for key, seed in new.items():
+        owner_key = key.rsplit(".", 1)[1]
+        assert seed["aliases"] == []
+        assert seed["source_ids"] == {"openrouter": owner_key}
+    assert new["live.lab.openrouter.qzx-synthlab"]["canonical_name"] == "Qzx Synthlab"
+    # Live artifacts land under the temporary live root, not the repo.
+    assert (tmp_path / "seeds" / "seeds.live.json").is_file()
+
+
+def test_b9_known_lab_seeds_refuse_fixture_mode(tmp_fixture_env, tmp_path):
+    from signal_ingest.config import Mode, load_settings
+    from signal_ingest.live.seeds import build_known_lab_seeds_from_run
+    from signal_ingest.resolution.types import SeedRegisterError
+
+    with pytest.raises(SeedRegisterError):
+        build_known_lab_seeds_from_run(
+            load_settings(mode=Mode.FIXTURE), "b9-run", path=tmp_path / "seeds.live.json"
+        )
+
+
+@pytest.fixture
+def b9_resolution_env(tmp_fixture_env, frozen_clock):
+    from signal_ingest.config import Mode, load_settings
+    from signal_ingest.storage import connect, init_db
+
+    settings = load_settings(mode=Mode.FIXTURE)
+    init_db(settings)
+    with connect(settings) as conn:
+        conn.execute(
+            "TRUNCATE resolution_events, source_identities, entities RESTART IDENTITY CASCADE"
+        )
+        conn.execute("TRUNCATE quarantines, relationships, repo_metrics, candidates RESTART IDENTITY CASCADE")
+        conn.commit()
+    return settings
+
+
+def test_b9_resolve_run_match_match_abstain_idempotent(b9_resolution_env):
+    from signal_ingest.adapters.bulk.persist import upsert_candidate
+    from signal_ingest.resolution.run_resolution import resolve_run
+    from signal_ingest.storage import connect, create_run
+
+    settings = b9_resolution_env
+    rows = [
+        ("bulk.yc", "STARTUP", "b9-yc-openai",
+         {"content": {"entityName": "OpenAI, Inc."}, "meta": {"yc_id": "openai"},
+          "source": {"url": "https://www.ycombinator.com/companies/openai"}}),
+        ("bulk.products", "PRODUCT", "b9-prod-openai",
+         {"content": {"startupName": "Open AI", "productName": "Synth Chat",
+                      "ownerEvidenceUrl": "https://openai.example/"}, "meta": {"product_id": "b9-prod-openai"}}),
+        ("bulk.products", "PRODUCT", "b9-prod-nobody",
+         {"content": {"startupName": "Nobody Corp", "productName": "Synth Void",
+                      "ownerEvidenceUrl": "https://nobody.example/"}, "meta": {"product_id": "b9-prod-nobody"}}),
+    ]
+    with connect(settings) as conn:
+        run_id = create_run(conn, settings=settings)
+        for source_id, record_type, ext, payload in rows:
+            upsert_candidate(conn, source_id=source_id, record_type=record_type, external_id=ext,
+                             payload=payload, evidence={"synthetic": True}, status="accepted", run_id=run_id)
+        conn.commit()
+
+        first = resolve_run(conn, run_id, mode="fixture")
+        conn.commit()
+        events = conn.execute(
+            "SELECT raw_name, decision, canonical_id, payload FROM resolution_events "
+            "WHERE run_id = %s ORDER BY raw_name", (run_id,),
+        ).fetchall()
+        second = resolve_run(conn, run_id, mode="fixture")
+        conn.commit()
+        n_after = conn.execute(
+            "SELECT COUNT(*) FROM resolution_events WHERE run_id = %s", (run_id,)
+        ).fetchone()[0]
+
+    assert first["mentions"] == 3
+    assert first["decisions"] == {"abstain": 1, "match": 2}, first
+    assert second["decisions"] == first["decisions"]
+    by_name = {r[0]: r for r in events}
+    assert by_name["OpenAI, Inc."][1] == "match" and by_name["Open AI"][1] == "match"
+    assert by_name["OpenAI, Inc."][2] == by_name["Open AI"][2] == "fixture.startup.openai"
+    assert by_name["Nobody Corp"][1] == "abstain"
+    assert n_after == len(events) == 3, "second run must not add mapping events"
+    assert all("suggested_candidates" not in (r[3] or {}) for r in events)
+    assert "embedded" not in first and "annotated" not in first
+
+
+def test_b9_resolve_run_live_mode_rejects_fixture_seeds(b9_resolution_env):
+    from signal_ingest.resolution.run_resolution import resolve_run
+    from signal_ingest.resolution.seeds import DEFAULT_FIXTURE_SEEDS_PATH
+    from signal_ingest.resolution.types import FixtureSeedRejectedError
+    from signal_ingest.storage import connect, create_run
+
+    with connect(b9_resolution_env) as conn:
+        run_id = create_run(conn, settings=b9_resolution_env)
+        conn.commit()
+        with pytest.raises(FixtureSeedRejectedError):
+            resolve_run(conn, run_id, mode="live", seeds_path=DEFAULT_FIXTURE_SEEDS_PATH)

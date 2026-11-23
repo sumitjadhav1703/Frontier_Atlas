@@ -54,6 +54,8 @@ class HttpPool:
         self._origin_next: dict[str, float] = defaultdict(float)
         # Per-origin lock: pacing one slow origin must not stall the others.
         self._origin_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+        # Per-origin body caps (source inventory `max_decoded_bytes`); default otherwise.
+        self._origin_caps: dict[str, int] = {}
         self._waiting = 0
         self._inflight = 0
         self._peak_inflight = 0
@@ -94,6 +96,10 @@ class HttpPool:
     def origin_of(self, url: str) -> str:
         parts = urlsplit(url)
         return f"{parts.scheme}://{parts.netloc}".lower()
+
+    def allow_origin_body_bytes(self, url: str, max_bytes: int) -> None:
+        """Raise the decoded (and raw) body cap for one origin; never below the defaults."""
+        self._origin_caps[self.origin_of(url)] = max(int(max_bytes), self.limits.max_decoded_bytes)
 
     async def aclose(self) -> None:
         self._closed = True
@@ -195,6 +201,10 @@ class HttpPool:
     ) -> tuple[bytes, httpx.Headers]:
         max_c = self.limits.max_compressed_bytes
         max_d = self.limits.max_decoded_bytes
+        cap = self._origin_caps.get(self.origin_of(str(response.request.url)))
+        if cap:
+            # Identity-encoded pages arrive raw, so the raw cap rises with the decoded one.
+            max_d, max_c = cap, max(max_c, cap)
         cl = response.headers.get("content-length")
         if cl is not None:
             try:

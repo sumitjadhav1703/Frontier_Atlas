@@ -14,7 +14,7 @@ domain_governor: news.mit.edu
 fallback: qualify alternate publisher AI desk before swap
 feed_url: "https://news.mit.edu/topic/mitartificial-intelligence2-rss.xml"
 reviewer: desk-research
-probe_artifact: /Users/sumitjadhav/AI Engineer Assessment/var/live/probes/news_mit/discovery_20261121T190733Z.json
+probe_artifact: var/live/probes/news_mit/discovery_20261121T190733Z.json
 probe_fetch_status: ok
 probe_schema_fingerprint: 2e612fe2772fcedb28ad90d6ceb7a2f61846f186aac38a72f20cdd5ed787a3a2
 probe_rate_limit_headers: "{}"
