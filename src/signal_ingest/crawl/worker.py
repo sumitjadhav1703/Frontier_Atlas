@@ -53,9 +53,10 @@ async def process_claimed_task(
     Bulk sources (B2) dispatch discover→fetch→parse(+enrich_stars) via adapters.
     """
     cfg = settings or get_settings()
-    from signal_ingest.adapters.monitors.pipeline import MONITOR_SOURCES, process_monitor_task
+    from signal_ingest.adapters.monitors.pipeline import get_adapter, process_monitor_task
 
-    if task.source_id in MONITOR_SOURCES:
+    # Any monitor adapter, including extra job feeds that are not one of the ten monitors.
+    if get_adapter(task.source_id) is not None:
         from signal_ingest.adapters.monitors.config import load_monitor_config
 
         mcfg = load_monitor_config(task.source_id)

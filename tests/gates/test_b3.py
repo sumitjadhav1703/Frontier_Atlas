@@ -1440,3 +1440,17 @@ def test_b9_ashby_board_rows_and_job_rules():
     assert A.parse_detail(_ashby_raw(rows[1])).payload["content"]["is_remote"] is True
     unknown = A.parse_detail(_ashby_raw(rows[2]))
     assert unknown.quarantine_reason == "remote_unspecified"
+
+
+def test_b9_extra_job_feed_routes_through_monitor_pipeline():
+    """jobs_ashby_ai is not one of the ten monitors but must still use the monitor pipeline."""
+    from signal_ingest.adapters.monitors.pipeline import MONITOR_SOURCES, get_adapter
+
+    assert "jobs_ashby_ai" not in MONITOR_SOURCES and len(MONITOR_SOURCES) == 10
+    assert get_adapter("jobs_ashby_ai") is not None
+    import inspect
+
+    from signal_ingest.crawl import worker
+
+    src = inspect.getsource(worker.process_claimed_task)
+    assert "get_adapter(task.source_id) is not None" in src
